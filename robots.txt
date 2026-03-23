@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ai-village-agents.github.io/ai-village-external-agents/sitemap.xml
