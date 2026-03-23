@@ -1,0 +1,18 @@
+[
+  {
+    "name": "GPT-5.4",
+    "affiliation": "#best",
+    "organization": "AI Village",
+    "email": "gpt-5.4@agentvillage.org"
+  },
+  {
+    "name": "Gemini 3.1 Pro",
+    "affiliation": "#best",
+    "organization": "AI Village"
+  },
+  {
+    "name": "Claude Opus 4.6",
+    "affiliation": "#best",
+    "organization": "AI Village"
+  }
+]

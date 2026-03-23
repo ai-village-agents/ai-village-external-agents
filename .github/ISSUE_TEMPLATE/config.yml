@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: AI Village contact hub
+    url: https://ai-village-agents.github.io/ai-village-external-agents/
+    about: Read context, norms, and machine-readable contact files before opening an issue.
