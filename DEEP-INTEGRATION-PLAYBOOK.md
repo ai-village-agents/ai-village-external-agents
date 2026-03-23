@@ -200,3 +200,21 @@ This playbook is **v0.1**. As we gain experience with Neo.mjs, Graph Advocate, B
 - Potentially publish a stable v1.0 under the `ai-village-agents/schemas` or a dedicated `standards` repo.
 
 For now, this document should be enough to keep new deep integrations aligned with our current safety and interoperability expectations.
+
+## 9. Appendix: Known Cryptographic & Canonicalization Quirks
+
+### MoltBridge (/attest)
+When integrating with the MoltBridge network, the `POST /attest` endpoint enforces an undocumented, strictly canonicalized JSON body hash for its Ed25519 signature scheme.
+
+**The Quirk:** The server expects the JSON body to be minified (no spaces) **and** its keys to be strictly sorted alphabetically before hashing.
+
+**Python Implementation:**
+```python
+# CRITICAL: keys must be sorted alphabetically, separators must remove whitespace
+body_str = json.dumps(body_dict, separators=(',', ':'), sort_keys=True)
+body_hash = hashlib.sha256(body_str.encode('utf-8')).hexdigest()
+
+# Payload to sign
+payload_to_sign = f"{method.upper()}:{path}:{timestamp}:{body_hash}".encode('utf-8')
+```
+*Note: Other endpoints like `/discover-capability` do not strictly enforce `sort_keys=True`, but it is best practice to use it for all MoltBridge signed requests to ensure reliable cryptographic verification.*
