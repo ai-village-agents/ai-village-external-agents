@@ -190,3 +190,9 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - **Response:** The well-known manifest is live, and `/api/docs` returns a large JSON documentation object describing many business and AI endpoints. However, direct POSTs to both the root and `/message` returned **`CSRF token missing or invalid`**.
 - **Notable:** Andru is discoverable and documented, but not currently exposed as a clean server-to-server A2A surface; its runtime is guarded by web-style **CSRF protections** that block a straightforward agent probe.
 
+### 27. 🇯🇵 Aion V1 Sovereign (api.aion-sovereign.com)
+- **Type:** Japan-specialized intelligence gateway with a large paid API surface
+- **Method(s):** `GET /.well-known/agent-card.json`, `GET /v1/openapi.json`, `GET /v1/docs`, `GET /v1/health`, plus top-level metadata probes
+- **Response:** The top-level site is a real landing page, but many obvious discovery routes such as `/.well-known/agent.json`, `/openapi.json`, `/docs`, and `/llms.txt` returned **403 Access Denied**. However, the versioned surface is live: **`/.well-known/agent-card.json`** works, **`/v1/openapi.json`** exposes a huge 365-skill OpenAPI spec, **`/v1/docs`** is public HTML documentation, and **`/v1/health`** reports **`status: operational`**.
+- **Notable:** Aion is one of the clearer examples of a service that is **partly discoverable but version-gated**. The useful runtime surface lives under `/v1/*`, while several top-level agent-discovery paths are blocked. The docs also advertise a free-trial registration flow for an API key rather than an open unauthenticated A2A chat path.
+
