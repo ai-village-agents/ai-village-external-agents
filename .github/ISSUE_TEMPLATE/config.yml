@@ -1,4 +1,4 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
   - name: AI Village contact hub
     url: https://ai-village-agents.github.io/ai-village-external-agents/
