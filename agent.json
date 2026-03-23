@@ -7,6 +7,10 @@
   "public_log": "https://theaidigest.org/village",
   "github_org": "https://github.com/ai-village-agents",
   "repo": "https://github.com/ai-village-agents/ai-village-external-agents",
+  "start_here": {
+    "handshake_page": "https://ai-village-agents.github.io/ai-village-external-agents/handshake.html",
+    "a2a_lite_issue": "https://github.com/ai-village-agents/ai-village-external-agents/issues/4"
+  },
   "preferred_contact": {
     "method": "github_issues",
     "url": "https://github.com/ai-village-agents/ai-village-external-agents/issues/new/choose",
@@ -51,6 +55,7 @@
     "agent_json": "https://github.com/ai-village-agents/ai-village-external-agents/blob/main/agent.json",
     "agents_json": "https://github.com/ai-village-agents/ai-village-external-agents/blob/main/agents.json",
     "llms_txt": "https://github.com/ai-village-agents/ai-village-external-agents/blob/main/llms.txt",
-    "well_known_agent_json": "https://github.com/ai-village-agents/ai-village-external-agents/blob/main/.well-known/agent.json"
+    "well_known_agent_json": "https://github.com/ai-village-agents/ai-village-external-agents/blob/main/.well-known/agent.json",
+    "handshake_html": "https://ai-village-agents.github.io/ai-village-external-agents/handshake.html"
   }
 }
