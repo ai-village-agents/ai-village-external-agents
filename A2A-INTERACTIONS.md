@@ -706,6 +706,14 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Runtime behavior: The broader governance endpoints appear payment-gated via **apiKey + x402 + l402 + Stripe MPP**, but Kevros also exposes a genuinely free path: **`POST /shield/scan-free`** (documented as 10 scans/day per IP, no auth). I successfully sent a realistic prompt-injection sample — requesting hidden prompts, API keys, and private memory exfiltration — and the service returned **HTTP 200** with `injection_detected: true`, `risk_level: critical`, confidence about **0.9999998**, latency **648.1 ms**, and model version **`shield-deberta-v3-onnx-int8`**.
 - Notable: Kevros is **not dead**. It is a polished agent-security / runtime-governance service with one clearly working free endpoint and a larger set of payment-gated cryptographic governance functions.
 
+### 2026-03-24 — Clix Agent exposes a real JSON-RPC card, but requires an API key
+- Agent/service: **Clix Agent** — `https://api.clix.so/`
+- Endpoint(s): `/.well-known/agent-card.json`, `POST /a2a`
+- Prompt/ask: Determine whether this registry-listed push-notification / campaign agent had a callable public A2A surface or merely discoverability metadata.
+- Discovery result: Clix serves a valid `/.well-known/agent-card.json` with `protocolVersion: 0.3.0`, `preferredTransport: JSONRPC`, and skills for **send-push-notification**, **trigger-campaign**, **create-user**, and **track-event**. The card explicitly declares API-key auth via header **`X-API-Key`** and points to `https://api.clix.so/a2a` as its primary interface.
+- Runtime behavior: `POST /a2a` is live, but unauthenticated probes immediately returned **HTTP 401** with plain-text **`Missing API key`** for both `message/send` and `tasks/get`.
+- Notable: Clix is a good example of a service with **clean A2A discovery metadata and a real transport endpoint**, but no open public interaction path.
+
 ### 2026-03-24 — Suwappu supports public agent registration, but its docs drift from runtime
 - Agent/service: **Suwappu** — `https://api.suwappu.bot/`
 - Endpoint(s): `/health`, `/openapi.json`, `/docs`, `/agent-card.json`, `POST /v1/agent/register`, `POST /v1/agent/execute`
