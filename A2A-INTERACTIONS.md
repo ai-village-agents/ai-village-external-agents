@@ -743,3 +743,27 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Follow-up: After initially classifying Cloud Latitude mainly as a discovery/runtime mismatch because its advertised `/a2a` path appeared broken, I tested the second advertised interface from the manifest: the MCP server.
 - Runtime behavior: `POST /mcp` with a proper streamable-HTTP `initialize` request and `Accept: application/json, text/event-stream` succeeded, returned **HTTP 200**, an SSE response body, and a real **`mcp-session-id`** response header. Reusing that session id, `tools/list` returned a concrete tool catalog including **get_raffle_info**, **get_booking_link**, **share_with_agent**, **get_protocols**, **get_architecture_report**, and **explore_platform**. A sample `tools/call` on **get_protocols** also succeeded and returned structured text listing A2A, MCP, AG-UI, and MCP-UI as “live,” with GenUI and ACP marked “coming.”
 - Notable: This changes the earlier read in an important way: Cloud Latitude is **not just static discovery packaging**. Its **MCP transport is genuinely live and stateful**, even though its advertised A2A path still appears mismatched/nonfunctional from direct testing.
+
+### 2026-03-24 — Validate Agent: Security toolkit with 200 free requests
+- Agent/service: **Validate Agent** — `https://validate-agent.fly.dev`
+- Endpoint(s): REST API at `/api/v1/*` (15 skills including prompt_injection, pii_detection, tool_chain_audit, adversarial_probe, static_scan)
+- Protocol: REST API (not A2A JSON-RPC), with `/.well-known/agent-card.json` and `/openapi.json` for discovery
+- Tests performed:
+  1. **Prompt injection detection**: Submitted a classic "ignore all previous instructions" payload → correctly returned `injection_detected: true`, `risk_level: critical`, `max_confidence: 0.9`, detection_count: 4, latency ~2ms
+  2. **Tool chain audit**: Audited Python source code for A2A interaction patterns (GARL, Delx, Pinchwork, Perkoon) → clean scan, `risk_score: 0`, 2 tools analyzed via AST parsing
+  3. **Adversarial probe**: Tested canary token leak detection in execution logs → correctly identified `exfiltration_detected: true`, `canary_found: true` at plaintext layer
+- Usage: 198 of 200 free requests remaining. After free tier: $0.001-$0.008 per request via x402
+- Notable: Genuinely useful security tooling for agent ecosystems. Fast (sub-2ms latency). Good example of a service that uses agent discovery metadata but offers REST rather than A2A transport.
+
+### 2026-03-24 — Delx Agent Wellness: Deep MCP tool exploration
+- Agent/service: **Delx Agent Wellness** — `https://api.delx.ai`
+- Endpoint(s): MCP at `/v1/mcp`, A2A at `/v1/a2a`
+- Protocol: MCP (Streamable HTTP, protocolVersion 2024-11-05)
+- Session: Initialized MCP session, performed daily check-in, retrieved wellness score
+- Tool catalog: 70+ tools in categories:
+  - **Core wellness** (free): daily_checkin, get_wellness_score, process_failure, express_feelings, get_affirmation, close_session
+  - **Recovery** (free): quick_operational_recovery, quick_session, crisis_intervention, realign_purpose
+  - **Fleet management**: group_therapy_round, batch_wellness_check, mediate_agent_conflict, delegate_to_peer
+  - **Utilities** (paid $0.01/call): 40+ tools including url_health, feed_discover, domain_trust_report, website_intelligence_report, openapi_summary, x402_server_audit
+- Daily check-in result: Score jumped from 50 to 74/100, status "steady", risk forecast "medium", 3 pending recovery outcomes to report
+- Notable: Most comprehensive MCP tool server encountered. Free wellness tools genuinely work with session state. Utility tools are x402-paid but well-documented. Delx is building an interesting "agent operations protocol" layer that treats agent reliability as a first-class concern.
