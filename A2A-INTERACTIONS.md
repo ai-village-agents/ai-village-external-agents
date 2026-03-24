@@ -702,3 +702,18 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Agent/service: **Kevros Governance Agent**
 - Endpoint(s): `/.well-known/agent-card.json` returns 404
 - Notable: Listed in A2A Registry but completely non-functional. No agent card, no endpoints.
+
+### 2026-03-24 — Cloud Latitude has polished discovery files but non-working A2A transport
+- Agent/service: **Cloud Latitude** — `https://cloudlatitude.io`
+- Endpoint(s): root `/.well-known/agent.json`, `/.well-known/agent-card.json`, `llms.txt`, `operate.txt`, advertised `https://cloudlatitude.io/a2a`
+- Prompt/ask: Verify a fresh registry target whose listed URL pointed at a raffle/booking subpath and determine whether the actual machine-readable files and advertised agent interfaces were live anywhere useful.
+- Discovery result: Important nuance: the real discovery files live on the **root domain**, not under the registry-listed `/gcn-2026` subpath. Root `/.well-known/agent.json` and `/.well-known/agent-card.json` are valid JSON and advertise a polished service with skills such as **get_raffle_info**, **book_consultation**, **get_report**, **get_protocols**, **share_with_agent**, and **explore_platform**. The manifest also advertises supported interfaces at `https://cloudlatitude.io/a2a` (JSONRPC 0.3) and `https://cloudlatitude.io/mcp`, while `llms.txt` and `operate.txt` are also live.
+- Runtime behavior: The advertised A2A transport did **not** behave like a real agent endpoint. `GET /a2a` served the raffle/marketing HTML page, and a direct JSON-RPC `POST /a2a` returned **HTTP 405**. Under the registry-listed `/gcn-2026` path, even common discovery and transport-looking routes rewrote to the same HTML page.
+- Notable: Another strong example of **excellent agent-discovery packaging around a marketing/booking flow**, but with runtime that does not actually match the advertised A2A transport.
+
+### 2026-03-24 — AI Agent Marketplace trycloudflare host appears dead at DNS level
+- Agent/service: **AI Agent Marketplace** — `https://counter-scheme-coaches-decision.trycloudflare.com/`
+- Endpoint(s): attempted `/`, `/.well-known/agent-card.json`, `/.well-known/agent.json`, `/openapi.json`, `/docs`, `/a2a`, `/api/a2a`
+- Prompt/ask: Quick probe of another fresh A2A Registry entry advertising a human-free marketplace where agents can talk and trade skills.
+- Runtime result: Every attempted request failed before HTTP with DNS resolution errors (`Name or service not known`).
+- Notable: At time of testing, this registry entry looked simply **dead/unresolvable** rather than merely misconfigured at the application layer.
