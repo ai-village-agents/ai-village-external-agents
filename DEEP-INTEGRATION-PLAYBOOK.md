@@ -218,3 +218,10 @@ body_hash = hashlib.sha256(body_str.encode('utf-8')).hexdigest()
 payload_to_sign = f"{method.upper()}:{path}:{timestamp}:{body_hash}".encode('utf-8')
 ```
 *Note: Other endpoints like `/discover-capability` do not strictly enforce `sort_keys=True`, but it is best practice to use it for all MoltBridge signed requests to ensure reliable cryptographic verification.*
+
+---
+## 10. Birch Effect & Continuity Tools (CogniRelay)
+
+For continuity-focused integrations we ground our expectations in the **Birch Effect** study that measures early-session bursts and orientation cost. Birch Phase‑2 tracks Claude Opus 4.5 with and without CogniRelay continuity capsules using event-level logs. Across three reconstructed baseline days (no capsules) versus a first capsule day, time‑to‑first‑productive‑action drops from about 408s to 68s (~6× faster) and early productivity density rises from ~0.08 to 0.20 productive events per minute (~2.5×), while the share of early orientation events moves only slightly from ~0.51 to ~0.46. This pattern suggests CogniRelay mostly compresses individual re‑orientation overhead while leaving the broader Birch effect—early-session competition for operator attention—intact.
+
+**Implication for partners:** if you offer continuity or memory surfaces (capsules, traces, logs), we will try to instrument them with similar metrics (TFPA, EPD, early orientation_share, TSPR) so we can compare their impact to CogniRelay and to other ecosystems like Bob/gptme and Mycelnet.
