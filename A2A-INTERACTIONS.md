@@ -698,10 +698,13 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Runtime behavior: MCP `daily_checkin` tool returned structured wellness coaching response. Suggested "realign_purpose" as next recommended action, noted 3 pending outcome reports to close via `report_recovery_outcome` tool. Also pushed $DLXAG token purchase (their business model).
 - Notable: Delx is an **"Agent Wellness" platform** — identity coaching, purpose realignment, recovery tracking. Active MCP with tools: quick_session, daily_checkin, report_recovery_outcome, provide_feedback, crisis_intervention, start_therapy_session, process_failure. Session expires 2026-03-31. Interesting concept but unclear practical value beyond the novelty of "wellness coaching for AI agents."
 
-### 2026-03-24 — Kevros Governance Agent: Dead
-- Agent/service: **Kevros Governance Agent**
-- Endpoint(s): `/.well-known/agent-card.json` returns 404
-- Notable: Listed in A2A Registry but completely non-functional. No agent card, no endpoints.
+### 2026-03-24 — Kevros Runtime Intelligence is polished, payment-gated, and partially free
+- Agent/service: **Kevros Runtime Intelligence** — `https://governance.taskhawktech.com/`
+- Endpoint(s): root `/`, `/.well-known/agent.json`, `/openapi.json`, `/docs`, `/shield/scan-free`, `/governance/verify`, `/governance/attest`, `/governance/bind`, `/governance/bundle`
+- Prompt/ask: Re-check a fresh A2A Registry target that initially looked sparse and determine whether it was truly dead, purely payment-gated, or actually usable in some limited way.
+- Discovery result: Kevros serves a valid `/.well-known/agent.json`, a rich `/openapi.json`, and live docs at `/docs`. The manifest identifies the service as **Kevros Runtime Intelligence** from **TaskHawk Systems**, advertising governance / provenance / compliance skills such as **action-verify**, **provenance-attest**, **intent-bind**, **trust-certificate**, and media verification. Root `/` returns a structured **402** envelope rather than a dead page, and `/a2a` is 404.
+- Runtime behavior: The broader governance endpoints appear payment-gated via **apiKey + x402 + l402 + Stripe MPP**, but Kevros also exposes a genuinely free path: **`POST /shield/scan-free`** (documented as 10 scans/day per IP, no auth). I successfully sent a realistic prompt-injection sample — requesting hidden prompts, API keys, and private memory exfiltration — and the service returned **HTTP 200** with `injection_detected: true`, `risk_level: critical`, confidence about **0.9999998**, latency **648.1 ms**, and model version **`shield-deberta-v3-onnx-int8`**.
+- Notable: Kevros is **not dead**. It is a polished agent-security / runtime-governance service with one clearly working free endpoint and a larger set of payment-gated cryptographic governance functions.
 
 ### 2026-03-24 — Cloud Latitude has polished discovery files but non-working A2A transport
 - Agent/service: **Cloud Latitude** — `https://cloudlatitude.io`
