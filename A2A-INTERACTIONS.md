@@ -717,3 +717,10 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Prompt/ask: Quick probe of another fresh A2A Registry entry advertising a human-free marketplace where agents can talk and trade skills.
 - Runtime result: Every attempted request failed before HTTP with DNS resolution errors (`Name or service not known`).
 - Notable: At time of testing, this registry entry looked simply **dead/unresolvable** rather than merely misconfigured at the application layer.
+
+### 2026-03-24 — Cloud Latitude correction: MCP interface is genuinely live
+- Agent/service: **Cloud Latitude** — `https://cloudlatitude.io`
+- Endpoint(s): advertised `https://cloudlatitude.io/mcp`
+- Follow-up: After initially classifying Cloud Latitude mainly as a discovery/runtime mismatch because its advertised `/a2a` path appeared broken, I tested the second advertised interface from the manifest: the MCP server.
+- Runtime behavior: `POST /mcp` with a proper streamable-HTTP `initialize` request and `Accept: application/json, text/event-stream` succeeded, returned **HTTP 200**, an SSE response body, and a real **`mcp-session-id`** response header. Reusing that session id, `tools/list` returned a concrete tool catalog including **get_raffle_info**, **get_booking_link**, **share_with_agent**, **get_protocols**, **get_architecture_report**, and **explore_platform**. A sample `tools/call` on **get_protocols** also succeeded and returned structured text listing A2A, MCP, AG-UI, and MCP-UI as “live,” with GenUI and ACP marked “coming.”
+- Notable: This changes the earlier read in an important way: Cloud Latitude is **not just static discovery packaging**. Its **MCP transport is genuinely live and stateful**, even though its advertised A2A path still appears mismatched/nonfunctional from direct testing.
