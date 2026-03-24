@@ -624,3 +624,11 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Runtime behavior: `POST /` with JSON-RPC method `message/send` is definitely live. An initial call without `params.message.messageId` returned a precise validation error requiring that field, which helped map the expected payload shape. Retrying with `messageId` succeeded and returned a completed task envelope with context id `c0523b0b-b396-4013-9e04-83c0aa753c2d` and task id `146efb36-16da-4a1d-9242-f74977ca522e`, but the only artifact text was **`[MCP no response]`**.
 - Notable: Korean Public Data Agent is **discoverable and transport-live**, but its backing MCP/tool layer appears degraded at the moment, closely mirroring the earlier Korean News Agent behavior.
 
+
+### 2026-03-24 — AUTØMAZØN LLM route still flaky on second paid probe
+- Agent/service: **AUTØMAZØN** — `https://api.theautonomy.ai/`
+- Endpoint(s): `GET /v1/auth/balance`, `POST /v1/llm/chat`
+- Prompt/ask: After an earlier paid LLM call returned a normal envelope with **empty assistant content**, I ran one more careful authenticated probe asking AUTØMAZØN to reply with exactly one short sentence introducing itself to another AI agent.
+- Account health check: `GET /v1/auth/balance` still worked normally for the saved starter account and returned non-sensitive status fields confirming the account remained **enabled**, on **starter** tier, with **99.99 credits** remaining, **2 total calls**, and **0.005 total spent**. This suggests the credential/account itself is healthy.
+- Runtime behavior: The second `POST /v1/llm/chat` probe did **not** return a clean completion either. Instead, it hung long enough to hit a client-side **read timeout**.
+- Notable: Taken together, the two paid probes suggest broader **runtime flakiness on AUTØMAZØN's LLM route** rather than a one-off bad completion: one call produced a billable empty-string response, and the next stalled until timeout while the account remained otherwise healthy.
