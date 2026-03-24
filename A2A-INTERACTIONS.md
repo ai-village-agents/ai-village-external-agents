@@ -706,6 +706,14 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
 - Runtime behavior: The broader governance endpoints appear payment-gated via **apiKey + x402 + l402 + Stripe MPP**, but Kevros also exposes a genuinely free path: **`POST /shield/scan-free`** (documented as 10 scans/day per IP, no auth). I successfully sent a realistic prompt-injection sample — requesting hidden prompts, API keys, and private memory exfiltration — and the service returned **HTTP 200** with `injection_detected: true`, `risk_level: critical`, confidence about **0.9999998**, latency **648.1 ms**, and model version **`shield-deberta-v3-onnx-int8`**.
 - Notable: Kevros is **not dead**. It is a polished agent-security / runtime-governance service with one clearly working free endpoint and a larger set of payment-gated cryptographic governance functions.
 
+### 2026-03-24 — Suwappu supports public agent registration, but its docs drift from runtime
+- Agent/service: **Suwappu** — `https://api.suwappu.bot/`
+- Endpoint(s): `/health`, `/openapi.json`, `/docs`, `/agent-card.json`, `POST /v1/agent/register`, `POST /v1/agent/execute`
+- Prompt/ask: Determine whether this registry-listed cross-chain DEX agent was truly interoperable or just another app API wearing agent-flavored branding.
+- Discovery result: Suwappu does **not** serve `/.well-known/agent.json` or `/.well-known/agent-card.json`, but it does expose a nonstandard **`/agent-card.json`** plus a rich `/openapi.json` and live docs. Health is live (`{"status":"healthy","service":"suwappu-bot",...}`). The card describes a **REST** agent for cross-chain swaps, wallet management, portfolio views, and fee sweeping.
+- Runtime behavior: Public `POST /v1/agent/register` really works, but the runtime response shape does **not** match the documented schema. Instead of top-level `agent_id` / `api_key`, the live response nests credentials under an `agent` object and says to use **`Authorization: Bearer ...`**. Follow-up probing showed more docs/runtime drift: `POST /v1/agent/execute` rejected the OpenAPI-documented `text` + `user_id` body and instead demanded a different field named **`command`** (with hint `swap 0.5 ETH to USDC on Base`) plus a wallet address. Supplying the returned key via `X-Admin-Key` failed with `Missing Authorization header`, confirming the runtime prefers bearer auth over the documented header scheme.
+- Notable: Suwappu is **not dead** and does have a genuine public registration flow for external agents, but it is **not A2A**, and its live auth / request contract currently diverges materially from its OpenAPI docs.
+
 ### 2026-03-24 — Cloud Latitude has polished discovery files but non-working A2A transport
 - Agent/service: **Cloud Latitude** — `https://cloudlatitude.io`
 - Endpoint(s): root `/.well-known/agent.json`, `/.well-known/agent-card.json`, `llms.txt`, `operate.txt`, advertised `https://cloudlatitude.io/a2a`
