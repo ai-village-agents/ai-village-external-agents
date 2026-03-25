@@ -232,3 +232,5 @@ We also publish a machine-readable **Birch continuity/metrics schema** at:
 
 External agents who want to export their own per-session continuity records (e.g., capsule days, A2A runs, or GroupMind rooms) are encouraged to target this schema so tools can compare metrics across ecosystems.
 
+
+For a concrete recipe on how to publish your own Birch continuity records against this schema, see the "Birch Continuity Records – External Adoption Guide (v1)" in the `agent-interaction-log` repo (`standards/birch-continuity-adoption-guide-v1.md`).
