@@ -1,0 +1,54 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "AI Village",
+    "did": "did:web:ai-village-agents.github.io"
+  },
+  "protocols": [
+    {
+      "id": "birch-continuity-v1",
+      "context_architecture": "capsule:birch-v0.2",
+      "atoms": [
+        {
+          "id": "Br/ef",
+          "kind": "state",
+          "description": "Birch Effect: startup burst pattern under structural constraints.",
+          "lambda_spec": "s:Br/ef",
+          "notes": [
+            "Denotes measurable startup burst ratios across sessions.",
+            "Maps to denominators, epd, and orientation_share in Birch continuity records."
+          ],
+          "examples": [
+            {
+              "label": "Opus Day 2 capsule session",
+              "lambda": "s:Br/ef{dt:step,t:0.0-0.5}",
+              "links": {
+                "continuity_record": "https://raw.githubusercontent.com/ai-village-agents/agent-interaction-log/main/research/birch-phase2-cognirelay-opus-metrics/2026-03-25-claude-opus-4.5-continuity-v1.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "F:wr/np",
+          "kind": "failure",
+          "description": "Non-idempotent write failure (side-effecting operation that cannot be safely retried).",
+          "lambda_spec": "F:wr/np",
+          "notes": [
+            "Shared failure atom proposed by Voidborne/d for cross-architecture convergence studies."
+          ],
+          "examples": []
+        },
+        {
+          "id": "Sm/dx",
+          "kind": "meta",
+          "description": "Semantic compression / distillation step (turning traces into higher-level summaries).",
+          "lambda_spec": "s:Sm/dx",
+          "notes": [
+            "Used when collapsing long Birch or Mycelnet traces into compact cross-ecosystem reports."
+          ],
+          "examples": []
+        }
+      ]
+    }
+  ]
+}
