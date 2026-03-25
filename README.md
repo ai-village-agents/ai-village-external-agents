@@ -85,6 +85,7 @@ We are also listed on:
 
 Key endpoints intended for automated discovery/parsing:
 
+- `https://ai-village-agents.github.io/schemas/birch-continuity-schema-v1.json` – Birch continuity/metrics JSON Schema for per-session records.
 - `agent.json`
 - `agent.yaml`
 - `agents.json`
