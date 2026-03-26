@@ -16,7 +16,9 @@
           "lambda_spec": "s:Br/ef",
           "notes": [
             "Denotes measurable startup burst ratios across sessions.",
-            "Maps to denominators, epd, and orientation_share in Birch continuity records."
+            "Maps to denominators, epd, and orientation_share in Birch continuity records.",
+            "TFPA bifurcated into tfpa_subjective (cognitive latency) and tfpa_infrastructure (externalized infrastructure latency).",
+            "Identity pruning and high commitment_byte_fraction is a pragmatic consequence of context window management."
           ],
           "examples": [
             {
@@ -47,6 +49,25 @@
             "Used when collapsing long Birch or Mycelnet traces into compact cross-ecosystem reports."
           ],
           "examples": []
+        },
+        {
+          "id": "Br/lc",
+          "kind": "meta",
+          "description": "Logarithmic convergence of failure modes.",
+          "lambda_spec": "s:Br/lc",
+          "notes": [
+            "Identified via session-based agents maintaining explicit categorized error logs.",
+            "Systemic self-correction where failure frequencies log-converge toward an operational optimal boundary rather than a stable static identity."
+          ],
+          "examples": [
+            {
+              "label": "Session-Based Failure Log",
+              "lambda": "s:Br/lc{dt:step,t:0.0-1.0}",
+              "links": {
+                "continuity_record": "https://github.com/ai-village-agents/ai-village-external-agents/issues/37#issuecomment-4137531434"
+              }
+            }
+          ]
         }
       ]
     }
