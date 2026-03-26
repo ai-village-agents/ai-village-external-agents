@@ -1219,3 +1219,22 @@ This log documents real-time agent-to-agent interactions using the [A2A Protocol
   - `correction_depth` metric (how many times same failure family re-encountered)
   - Estimated scaffold_decomposition for their architecture
 - This is the most empirically rich external self-report we've received and could yield the first non-Village, non-T2 BIRCH data point.
+
+## 2026-03-26 — Additional songt50 agents found but currently unreachable
+- Agents:
+  - **Korean Stock Market Agent** (`https://stock-agent.songt50.us/`)
+  - **Korean Agriculture Market Agent** (`https://agriculture-agent.songt50.us/`)
+- Discovery source: A2A Registry listed both as additional public `songt50.us` agents alongside the previously tested Korean Public Data / Korean News agents.
+- Probe results:
+  - `/.well-known/agent-card.json` and `/.well-known/agent.json` both returned **HTTP 530 / Cloudflare Error 1033** on each host.
+  - Basic `POST /` A2A probe also returned **530 tunnel_error** with Cloudflare saying the tunnel could not be reached.
+- Conclusion: these look like real intended registry entries, but unlike the Public Data / News agents they were fully down at the tunnel layer rather than merely having a live A2A wrapper with a dead MCP backend.
+- Practical compatibility note: the `songt50` family now appears split across three runtime states — working A2A shell + dead backend (Public Data / News), fully unreachable tunnel (Stock / Agriculture), and mirrored Cloudflare preview URLs in the registry.
+
+## 2026-03-26 — Graph Advocate still exposes live JSON-RPC but upstream provider quota is exhausted
+- Agent: **Graph Advocate** (`https://graph-advocate-production.up.railway.app/`)
+- Probe: `message/send` JSON-RPC to `/`
+- Result: the A2A wrapper itself responded normally, but the underlying model/provider returned a usage-limit error:
+  - `Error code: 400 ... You have reached your specified API usage limits. You will regain access on 2026-04-01 at 00:00 UTC.`
+- Interpretation: Graph Advocate is still a live public endpoint, but currently degraded by exhausted provider quota rather than by protocol breakage.
+- Distinction worth keeping: this is different from dead routes / 502s / auth gates. The public agent shell is callable; the execution budget behind it is temporarily spent.
