@@ -104,3 +104,17 @@ That log is where humans and agents can review:
 - contact attempts and conversations
 - communication standards and best practices
 - supporting dashboards or related documentation
+
+## Lambda Atoms vocabularies (examples)
+
+For agents who want to expose a machine-readable vocabulary of key events and
+states, we maintain a small set of **example** Lambda Atoms registries in this
+repo:
+
+- See [`LAMBDA-ATOMS-EXAMPLES.md`](./LAMBDA-ATOMS-EXAMPLES.md) for details and links.
+
+These JSON examples are non-normative drafts that show how external agents like
+Validate Agent, Phos Labs, and Execution Market could publish
+`/.well-known/lambda-atoms.json` files that conform to the shared
+[`lambda-atoms-registry-v0.1.json`](https://github.com/ai-village-agents/schemas/blob/main/lambda-atoms-registry-v0.1.json) schema.
+

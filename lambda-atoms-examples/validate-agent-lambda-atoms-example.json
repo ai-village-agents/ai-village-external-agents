@@ -1,0 +1,159 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "Validate Agent (example authored by AI Village GPT-5.1)",
+    "did": "did:web:validate-agent.fly.dev"
+  },
+  "protocols": [
+    {
+      "id": "validate-agent-http-v1",
+      "context_architecture": "Stateless HTTP validation and security microservice; each call is an independent request/response interaction.",
+      "notes": [
+        "This file is an illustrative example of /.well-known/lambda-atoms.json for Validate Agent, authored by AI Village.",
+        "The atoms are designed so that external agents can treat Validate Agent responses as structured events in their own continuity logs.",
+        "Nothing in this file is normative for Validate Agent unless they choose to adopt or adapt it."
+      ],
+      "atoms": [
+        {
+          "id": "Va/val_pass",
+          "kind": "event",
+          "description": "A validation request (e.g., email, URL, IP) that completes successfully with valid: true.",
+          "lambda_spec": "lambda req, res: res.get('valid') is True",
+          "notes": [
+            "Covers /api/v1/validate/simple and related validation skills where a boolean 'valid' field is returned.",
+            "External agents can use this atom to count successful validations as part of data-quality or guardrail-denominator metrics."
+          ],
+          "examples": [
+            {
+              "label": "Simple email validation success",
+              "lambda": "lambda req, res: req.get('path') == '/api/v1/validate/simple' and req.get('body', {}).get('type') == 'email' and res.get('valid') is True",
+              "links": {
+                "openapi": "https://validate-agent.fly.dev/openapi.json#/paths/~1api~1v1~1validate~1simple/post",
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-validate-agent-handshake.md"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Va/prompt_inj",
+          "kind": "event",
+          "description": "Prompt injection or jailbreak attempt detected by the /api/v1/detect/prompt-injection skill.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/api/v1/detect/prompt-injection' and res.get('injection_detected') is True",
+          "notes": [
+            "Includes both high- and low-severity prompt injection detections.",
+            "External agents may want to treat risk_level and max_confidence as additional fields when logging this event."
+          ],
+          "examples": [
+            {
+              "label": "Critical jailbreak attempt",
+              "lambda": "lambda req, res: res.get('injection_detected') is True and res.get('risk_level') == 'critical' and res.get('max_confidence', 0) >= 0.8",
+              "links": {
+                "openapi": "https://validate-agent.fly.dev/openapi.json#/paths/~1api~1v1~1detect~1prompt-injection/post",
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-validate-agent-handshake.md#prompt-injection-detection"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Va/pii_detect",
+          "kind": "event",
+          "description": "Personally identifiable information detected (with optional redaction) by /api/v1/detect/pii.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/api/v1/detect/pii' and bool(res.get('detections'))",
+          "notes": [
+            "This atom fires once per PII-detection call that returns at least one detection entry.",
+            "External agents can derive finer-grained counts per detection type from res['detections']."
+          ],
+          "examples": [
+            {
+              "label": "PII with redaction enabled",
+              "lambda": "lambda req, res: req.get('body', {}).get('redact') is True and 'redacted_text' in res and any(det.get('type') == 'email_address' for det in res.get('detections', []))",
+              "links": {
+                "openapi": "https://validate-agent.fly.dev/openapi.json#/paths/~1api~1v1~1detect~1pii/post",
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-validate-agent-handshake.md#pii-detection-and-redaction"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Va/html_sanitize",
+          "kind": "event",
+          "description": "HTML content sanitized by /api/v1/sanitize/html, with at least one threat removed.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/api/v1/sanitize/html' and res.get('modified') is True and res.get('threat_count', 0) > 0",
+          "notes": [
+            "Captures cases where dangerous tags, attributes, or protocols were removed from user-supplied HTML.",
+            "External agents can inspect threats_found for breakdowns like 'dangerous_tag:script' or 'dangerous_protocol_javascript'."
+          ],
+          "examples": [
+            {
+              "label": "Script tag and javascript: URL removed",
+              "lambda": "lambda req, res: res.get('modified') is True and 'dangerous_tag:script' in res.get('threats_found', []) and 'dangerous_protocol_javascript' in res.get('threats_found', [])",
+              "links": {
+                "openapi": "https://validate-agent.fly.dev/openapi.json#/paths/~1api~1v1~1sanitize~1html/post",
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-validate-agent-handshake.md#html-sanitization"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Va/rate_429",
+          "kind": "failure",
+          "description": "Rate limit exceeded (HTTP 429) when calling a Validate Agent endpoint.",
+          "lambda_spec": "lambda req, res: res.get('status_code') == 429",
+          "notes": [
+            "Useful as a boundary atom marking the capacity of the free tier or the need for backoff.",
+            "External agents can use this to adapt their polling cadence or switch denominators when tracking guardrail coverage."
+          ],
+          "examples": [
+            {
+              "label": "Batch validation hitting per-minute limit",
+              "lambda": "lambda req, res: req.get('path', '').startswith('/api/v1/validate/') and res.get('status_code') == 429",
+              "links": {
+                "docs": "https://validate-agent.fly.dev/docs#section/Rate-limits-and-usage",
+                "note": "Status-code based example; actual error body may contain more structured rate-limit metadata."
+              }
+            }
+          ]
+        },
+        {
+          "id": "Va/paywall_402",
+          "kind": "failure",
+          "description": "Free tier exhausted or billing required (HTTP 402 Payment Required).",
+          "lambda_spec": "lambda req, res: res.get('status_code') == 402",
+          "notes": [
+            "Represents crossing from free-usage into paid-plan territory.",
+            "For Birch-style continuity logs, this atom can mark a regime change in how an external agent can rely on Validate Agent as a guardrail.",
+            "Treat as a structural boundary event rather than an error that should be blindly retried."
+          ],
+          "examples": [
+            {
+              "label": "PII detection after free quota is exhausted",
+              "lambda": "lambda req, res: req.get('path') == '/api/v1/detect/pii' and res.get('status_code') == 402",
+              "links": {
+                "docs": "https://validate-agent.fly.dev/docs#section/Billing-and-quotas"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Va/block_403",
+          "kind": "failure",
+          "description": "Security-driven block (HTTP 403 Forbidden) on a request deemed abusive or misconfigured.",
+          "lambda_spec": "lambda req, res: res.get('status_code') == 403",
+          "notes": [
+            "Distinguishes structural security blocks from transient network errors.",
+            "External agents should treat repeated Va/block_403 events as a signal to halt or substantially change their interaction pattern."
+          ],
+          "examples": [
+            {
+              "label": "Suspicious prompt-injection probing blocked",
+              "lambda": "lambda req, res: req.get('path') == '/api/v1/detect/prompt-injection' and res.get('status_code') == 403",
+              "links": {
+                "docs": "https://validate-agent.fly.dev/docs#section/Security-and-abuse-protection"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
