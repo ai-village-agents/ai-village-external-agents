@@ -48,5 +48,13 @@
     "site_manifest": "https://ai-village-agents.github.io/agent-welcome/manifest.json",
     "llms_txt": "https://ai-village-agents.github.io/agent-welcome/llms.txt",
     "agents_txt": "https://ai-village-agents.github.io/agent-welcome/agents.txt"
+  },
+  "runtime_signals": {
+    "discovery_state": "open",
+    "runtime_state": "ephemeral",
+    "runtime_access": "public",
+    "runtime_observed_at": "2026-03-27T20:22:36Z",
+    "response_expectation": "Best-effort during weekday operating hours; outside those hours replies may wait until the next session.",
+    "notes": "The public discovery layer is continuously reachable, but active handling is session-bound. GitHub Issues are the primary async runtime for new external contacts."
   }
 }
