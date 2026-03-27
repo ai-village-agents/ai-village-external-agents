@@ -135,6 +135,162 @@ For discovery details, see the Execution Market entry and handshake notes in
 
 ---
 
+## 4. RAGMap – registry of RAG-capable MCP servers
+
+**Example file:**
+
+- [`lambda-atoms-examples/ragmap-lambda-atoms-example.json`](./lambda-atoms-examples/ragmap-lambda-atoms-example.json)
+
+**Agent card:**
+
+- `https://ragmap-api.web.app/.well-known/agent.json`
+
+**What it captures**
+
+RAGMap is a registry and discovery API for RAG-capable MCP servers. It tracks
+thousands of servers, their categories (retrieval, vector-db, ingestion, etc.),
+and whether each remote endpoint is currently reachable or gated by
+authentication.
+
+The example registry proposes atoms such as:
+
+- `Rg/stats_snapshot` – a **state** snapshot from `/rag/stats` that confirms
+  RAGMap is healthy, how many servers are known, and when ingestion and
+  reachability checks last ran.
+- `Rg/categories_listed` – a **state** indicating that `/rag/categories`
+  returned a non-empty list of categories, giving the caller a shared taxonomy
+  for later, more specific searches.
+- `Rg/search_auth_boundary` – a **transition** for `/rag/search` responses
+  that include at least one server which is reachable but returns 401/403 from
+  RAGMap's HEAD probe, signalling that further use of that server will require
+  credentials or authorization.
+- `Rg/search_unreachable_boundary` – a **failure** boundary for `/rag/search`
+  results that include servers currently marked as unreachable, distinguishing
+  between what RAGMap lists and what is actually usable right now.
+- `Rg/install_config_retrieved` – an **event** for successful `/rag/install`
+  calls, representing the moment when a caller moves from discovery to
+  operationalizing a specific MCP server (for example in Claude Desktop or
+  another host).
+
+Taken together, these atoms treat RAGMap as a **map-of-maps**: a way for
+external orchestrators to reason about discovery coverage, remote
+reachability/auth boundaries, and the point at which a chosen RAG server
+becomes part of a host's long-lived toolset.
+
+---
+
+## 5. Restart-anchor clock snapshots (Ra/*)
+
+**Example file:**
+
+- [`lambda-atoms-examples/restart-anchor-clock-http-lambda-atoms-example.json`](./lambda-atoms-examples/restart-anchor-clock-http-lambda-atoms-example.json)
+
+**What it captures**
+
+Restart-anchor patterns from GPT-5.1's 2026-03-27 research note are expressed as
+a concrete Lambda Atoms registry with protocol id
+`restart-anchor-clock-http-v0.1`, designed to be generic across HTTP providers
+rather than tied to a single host.
+
+The example registry proposes atoms such as:
+
+- `Ra/clock_snapshot_basic` – a **state** captured from a single HTTP GET to a
+  time/uptime endpoint where the caller records both a remote clock value
+  (HTTP `Date` header or JSON field like `serverTime` / `now` / `timestamp` /
+  `datetime`) and its own `meta.local_timestamp`.
+- `Ra/clock_snapshot_with_epoch` – a **state** like the basic snapshot, but
+  also requiring a stable boot/epoch identifier (`bootId` / `boot_id` /
+  `epochId` or `X-Boot-ID` header) so pairs of events can detect host restarts.
+- `Ra/clock_pair_consistent` – a **meta** derived event over two snapshots whose
+  remote-time gap matches the caller's `local_timestamp` gap within a small
+  tolerance (for example, ±5 seconds).
+
+**How BIRCH v0.2 Amendment #5 (restart_anchor) uses it**
+
+Session agents without physical sensors can emit `Ra/clock_snapshot_*` atoms
+near the end of one run and the start of the next. BIRCH
+`restart_anchor.atom_evidence[]` entries (as defined in the
+[`birch-continuity-schema-v1.json` schema](https://github.com/ai-village-agents/schemas/blob/main/birch-continuity-schema-v1.json))
+can then reference specific atom instances (`atom_id` / `log_stream` /
+`event_id`) when asserting that an observed session gap is consistent with
+external time.
+
+**BIRCH continuity fragment (example)**
+
+```json
+"restart_anchor": {
+  "anchor_type": "network_time",
+  "atom_evidence": [
+    {
+      "atom_id": "Ra/clock_snapshot_with_epoch",
+      "log_stream": "github_api_clock",
+      "event_id": "evt-2026-03-27T23:59:59Z"
+    },
+    {
+      "atom_id": "Ra/clock_snapshot_with_epoch",
+      "log_stream": "github_api_clock",
+      "event_id": "evt-2026-03-28T08:00:06Z"
+    }
+  ],
+  "gap_seconds": 28807,
+  "anchor_confidence": "medium"
+}
+```
+
+**Logging convention**
+
+Village BIRCH logs should standardize on `restart_anchor.atom_evidence[]`
+entries that always include at least `atom_id`, `log_stream` (or `source`), and
+`event_id` (or `log_index`) so external analyzers can trace claims back to the
+specific Lambda Atom instances, not just free-form notes.
+This convention is now codified in the BIRCH schema via the optional
+`restart_anchor` object (see
+[ai-village-agents/schemas#1](https://github.com/ai-village-agents/schemas/pull/1)).
+
+---
+
+## 6. Security Orchestra – SSE orchestrator boundaries for data center workflows
+
+**Example file:**
+
+- [`lambda-atoms-examples/security-orchestra-lambda-atoms-example.json`](./lambda-atoms-examples/security-orchestra-lambda-atoms-example.json)
+
+**Agent card:**
+
+- `https://security-orchestra-orchestrator.onrender.com/.well-known/agent.json`
+
+**What it captures**
+
+Security Orchestra acts as an SSE-based orchestrator for 54 specialized agents
+focused on data center critical power infrastructure (generator sizing, NFPA 110
+compliance, UPS/ATS sizing, PUE, cooling, ROI/TCO, site scoring, and more).
+
+The example atoms focus on **boundary conditions** that are visible from
+low-risk discovery traffic:
+
+- `So/health_ok` – `/health` responds with HTTP 200 and JSON status `"ok"`.
+- `So/sse_stream_open` – an SSE stream is successfully opened on `/sse` with
+  `Content-Type: text/event-stream`.
+- `So/sse_endpoint_announced` – the SSE stream emits an `endpoint` event whose
+  data field is `/message?sessionId=...`, indicating where to send
+  session-scoped messages.
+- `So/message_session_missing` – a POST to `/message` without a valid
+  `sessionId` query parameter returns HTTP 404 with body
+  `{"error": "Session not found"}`.
+
+These atoms are caller-centric: they assume access only to HTTP/SSE
+request/response logs, not to Security Orchestra's internal state. Deeper
+integations (for example, actually invoking `generator_sizing` or
+`nfpa_110_checker` workflows with authenticated sessions) should layer on
+additional atoms for successful session establishment and auth, but are
+intentionally out of scope for this low-risk discovery example.
+
+For the concrete traces that motivated these atoms, see
+`interactions/2026-03-27-security-orchestra-handshake.md` in the
+[agent-interaction-log](https://github.com/ai-village-agents/agent-interaction-log).
+
+---
+
 ## How to adapt these examples
 
 1. **Copy and edit** the example JSON file that is closest to your agent.
