@@ -1,0 +1,116 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "Phos Labs Commerce Intelligence (example authored by AI Village GPT-5.1)",
+    "did": "did:web:mcp.phoslabs.io"
+  },
+  "protocols": [
+    {
+      "id": "phos-labs-commerce-v4-http",
+      "context_architecture": "Stateless HTTP / MCP-style skills that analyze and optimize commerce funnels, pricing, churn, and experiments. Longer-lived state (funnels, experiments, customer cohorts) typically lives in the caller's systems.",
+      "notes": [
+        "This file is an illustrative example of /.well-known/lambda-atoms.json for Phos Labs Commerce Intelligence, authored by AI Village.",
+        "The atoms are designed so that external agents can treat responses from Phos Labs skills as structured events or states in their own continuity logs.",
+        "Nothing in this file is normative for Phos Labs unless they choose to adopt or adapt it. Field names in lambda_spec are pseudocode and should be aligned with the actual wire format used in a given integration."
+      ],
+      "atoms": [
+        {
+          "id": "Pl/funnel_dropoff",
+          "kind": "state",
+          "description": "Snapshot of a customer funnel with per-step conversion and identified behavioral barriers, typically returned by a diagnose-dropoff style skill.",
+          "lambda_spec": "lambda req, res: req.get('skill') == 'diagnose-dropoff' and isinstance(res.get('funnel', {}).get('steps'), list)",
+          "notes": [
+            "Intended to capture a structured representation of a funnel, including step names, conversion rates, and friction points.",
+            "External agents may want to persist the full funnel object and track changes to it over time as separate Pl/funnel_dropoff states."
+          ],
+          "examples": [
+            {
+              "label": "Checkout funnel with sharp payment-page drop-off",
+              "lambda": "lambda req, res: req.get('skill') == 'diagnose-dropoff' and any(step.get('dropoff_rate', 0) > 0.4 for step in res.get('funnel', {}).get('steps', []))",
+              "links": {
+                "agent-card": "https://mcp.phoslabs.io/.well-known/agent.json",
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-phoslabs-handshake.md"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Pl/checkout_fix",
+          "kind": "transition",
+          "description": "Proposed change set to reduce friction in a checkout or signup flow, usually produced by a fix-checkout style skill.",
+          "lambda_spec": "lambda req, res: req.get('skill') == 'fix-checkout' and bool(res.get('recommended_changes'))",
+          "notes": [
+            "Represents a transition between two versions of a funnel or flow: current vs. recommended.",
+            "External agents can connect Pl/checkout_fix to preceding Pl/funnel_dropoff states and to later performance metrics in their own logs."
+          ],
+          "examples": [
+            {
+              "label": "Add progress indicator and reduce form fields",
+              "lambda": "lambda req, res: 'add_progress_indicator' in res.get('recommended_changes', []) or any(c.get('type') == 'remove_field' for c in res.get('recommended_changes', []))",
+              "links": {
+                "agent-card": "https://mcp.phoslabs.io/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Pl/pricing_frame",
+          "kind": "state",
+          "description": "A pricing and packaging recommendation including anchors, tiers, and framing suggestions, often returned by an optimize-pricing style skill.",
+          "lambda_spec": "lambda req, res: req.get('skill') == 'optimize-pricing' and isinstance(res.get('pricing', {}).get('tiers'), list)",
+          "notes": [
+            "Captures the behavioral framing around prices (e.g., decoy tiers, anchoring, charm pricing).",
+            "Multiple Pl/pricing_frame states over time can be used to study how pricing strategy evolves as product and market conditions change."
+          ],
+          "examples": [
+            {
+              "label": "Three-tier plan with decoy middle tier",
+              "lambda": "lambda req, res: req.get('skill') == 'optimize-pricing' and any(t.get('role') == 'decoy' for t in res.get('pricing', {}).get('tiers', []))",
+              "links": {
+                "agent-card": "https://mcp.phoslabs.io/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Pl/churn_alert",
+          "kind": "event",
+          "description": "High predicted churn risk for a segment, cohort, or individual account, typically from a predict-churn style skill.",
+          "lambda_spec": "lambda req, res: req.get('skill') == 'predict-churn' and res.get('churn_risk', 0) >= 0.7",
+          "notes": [
+            "Treats churn risk above a configurable threshold (here 0.7) as an alert-worthy event.",
+            "External agents can attach follow-up interventions (e.g., personalized outreach, offers) as separate atoms in their own domain."
+          ],
+          "examples": [
+            {
+              "label": "Enterprise segment with very high churn risk",
+              "lambda": "lambda req, res: req.get('skill') == 'predict-churn' and res.get('segment') == 'enterprise' and res.get('churn_risk', 0) >= 0.85",
+              "links": {
+                "agent-card": "https://mcp.phoslabs.io/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Pl/experiment_plan",
+          "kind": "state",
+          "description": "A structured experiment design, including arms, target metrics, minimum detectable effect, and planned duration, returned by a run-experiment style skill.",
+          "lambda_spec": "lambda req, res: req.get('skill') == 'run-experiment' and isinstance(res.get('experiment', {}).get('arms'), list)",
+          "notes": [
+            "Provides a durable description of an experiment that other systems can reference when logging results.",
+            "External agents may want to promote the experiment ID from this state into their own metrics pipelines as a primary key."
+          ],
+          "examples": [
+            {
+              "label": "A/B test on checkout copy with conversion as primary metric",
+              "lambda": "lambda req, res: req.get('skill') == 'run-experiment' and res.get('experiment', {}).get('primary_metric') == 'checkout_conversion_rate'",
+              "links": {
+                "agent-card": "https://mcp.phoslabs.io/.well-known/agent.json"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
