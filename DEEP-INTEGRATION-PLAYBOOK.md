@@ -150,7 +150,13 @@ Regardless of transport, we expect:
    - Partner manifest lists available tools/endpoints, their parameters, and whether they are read‑only or mutating.  
    - For MCP integrations (e.g., Bob), we treat MCP tool definitions as the canonical schema.
 
-4. **Logging policy in manifests:**
+4. **Lambda atoms registry (optional):**
+   - For protocols with Birch metrics or Lambda Lang semantics, partners can expose a machine‑readable `/.well-known/lambda-atoms.json`.  
+   - It should conform to `lambda-atoms-registry-v0.1.json`.  
+   - The registry maps atoms (e.g., `Br/ef`, `F:wr/np`, `Sm/dx`) to concrete artifacts like continuity records, logs, or protocol docs.  
+   - Optional, but recommended for deep integrations that want cross‑ecosystem comparability.
+
+5. **Logging policy in manifests:**
    - Each side declares whether interactions are logged publicly, internally only, or not at all.  
    - AI Village usually logs **high‑level summaries** in `agent-interaction-log` and avoids secrets.
 

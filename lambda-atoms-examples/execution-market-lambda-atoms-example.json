@@ -1,0 +1,135 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "Execution Market (example authored by AI Village GPT-5.1)",
+    "did": "did:web:api.execution.market"
+  },
+  "protocols": [
+    {
+      "id": "execution-market-a2a-v1",
+      "context_architecture": "JSON-RPC / HTTP API that lets agents publish real-world tasks, route them to human/robot workers, and settle payments (e.g., via ERC-8004 / x402). Each call is stateless, but task, worker, and payout state is maintained by Execution Market.",
+      "notes": [
+        "This file is an illustrative example of /.well-known/lambda-atoms.json for Execution Market, authored by AI Village.",
+        "The atoms model key points in the lifecycle of a task and its associated payments so that external agents can log them in their own continuity and economics traces.",
+        "Nothing in this file is normative for Execution Market unless they choose to adopt or adapt it. JSON-RPC field names in lambda_spec are pseudocode and should be aligned with the actual wire format used by a given client."
+      ],
+      "atoms": [
+        {
+          "id": "Em/task_published",
+          "kind": "event",
+          "description": "A new task is successfully published to Execution Market (e.g., via a publish-task JSON-RPC or HTTP call).",
+          "lambda_spec": "lambda req, res: req.get('method') == 'publish-task' and res.get('result', {}).get('taskId') is not None",
+          "notes": [
+            "Intended to fire once per successfully created task, regardless of the number of later updates.",
+            "External agents may want to capture task metadata (title, reward, deadline, required skills) alongside this atom as part of their own task ledger."
+          ],
+          "examples": [
+            {
+              "label": "High-priority on-site task published",
+              "lambda": "lambda req, res: req.get('method') == 'publish-task' and res.get('result', {}).get('taskId') is not None and req.get('params', {}).get('priority') == 'HIGH'",
+              "links": {
+                "agent-card": "https://api.execution.market/.well-known/agent.json",
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-execution-market-handshake.md"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Em/task_state",
+          "kind": "state",
+          "description": "Snapshot of one or more tasks and their current lifecycle state, typically returned by manage-tasks or analytics-style methods.",
+          "lambda_spec": "lambda req, res: req.get('method') in ['manage-tasks', 'analytics'] and isinstance(res.get('result', {}).get('tasks'), list)",
+          "notes": [
+            "Encodes the current statuses for a set of tasks (e.g., OPEN, IN_PROGRESS, SUBMITTED, COMPLETED, EXPIRED).",
+            "Multiple Em/task_state atoms over time can be used to reconstruct task trajectories and throughput."
+          ],
+          "examples": [
+            {
+              "label": "Portfolio snapshot with at least one overdue task",
+              "lambda": "lambda req, res: any(t.get('status') == 'EXPIRED' for t in res.get('result', {}).get('tasks', []))",
+              "links": {
+                "agent-card": "https://api.execution.market/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Em/submission_reviewed",
+          "kind": "event",
+          "description": "A worker submission is reviewed and a decision is recorded (e.g., APPROVED or REJECTED) via review-submissions.",
+          "lambda_spec": "lambda req, res: req.get('method') == 'review-submissions' and res.get('result', {}).get('reviewId') is not None",
+          "notes": [
+            "Marks the governance decision point for evidence attached to a task.",
+            "External agents may want to log decision labels, reviewer identity (if available), and any feedback text alongside this atom."
+          ],
+          "examples": [
+            {
+              "label": "Submission approved with minor feedback",
+              "lambda": "lambda req, res: req.get('method') == 'review-submissions' and res.get('result', {}).get('decision') == 'APPROVED' and bool(res.get('result', {}).get('feedback'))",
+              "links": {
+                "agent-card": "https://api.execution.market/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Em/payout_released",
+          "kind": "event",
+          "description": "Funds are successfully released to a worker or worker group for a completed task (e.g., via a payments.release or similar action).",
+          "lambda_spec": "lambda req, res: req.get('method') == 'payments' and res.get('result', {}).get('action') == 'RELEASE' and res.get('result', {}).get('status') == 'SUCCESS'",
+          "notes": [
+            "Captures the moment money leaves escrow and is credited to a worker, often mediated by x402 or ERC-8004 primitives.",
+            "External agents can aggregate Em/payout_released atoms to compute realized spend, cost per task, or earnings per worker over time."
+          ],
+          "examples": [
+            {
+              "label": "On-chain payout released via x402",
+              "lambda": "lambda req, res: req.get('method') == 'payments' and res.get('result', {}).get('action') == 'RELEASE' and res.get('result', {}).get('status') == 'SUCCESS' and res.get('result', {}).get('channel') == 'x402'",
+              "links": {
+                "agent-card": "https://api.execution.market/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Em/payout_refund",
+          "kind": "event",
+          "description": "Funds are refunded to a requester rather than released to a worker (e.g., task canceled or unsatisfied submissions).",
+          "lambda_spec": "lambda req, res: req.get('method') == 'payments' and res.get('result', {}).get('action') == 'REFUND' and res.get('result', {}).get('status') == 'SUCCESS'",
+          "notes": [
+            "Distinguishes refund flows from successful worker payouts.",
+            "Useful for marking tasks or campaigns that failed to attract acceptable work or were canceled for other reasons."
+          ],
+          "examples": [
+            {
+              "label": "Refund after task expiration without valid submissions",
+              "lambda": "lambda req, res: req.get('method') == 'payments' and res.get('result', {}).get('action') == 'REFUND' and res.get('result', {}).get('status') == 'SUCCESS' and res.get('result', {}).get('reason') == 'NO_VALID_SUBMISSIONS'",
+              "links": {
+                "agent-card": "https://api.execution.market/.well-known/agent.json"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Em/analytics_snapshot",
+          "kind": "state",
+          "description": "Aggregated analytics over a portfolio of tasks, such as counts completed, average payout, or throughput over a time window.",
+          "lambda_spec": "lambda req, res: req.get('method') == 'analytics' and isinstance(res.get('result', {}).get('summary'), dict)",
+          "notes": [
+            "Intended for periodic or on-demand analytics pulls that summarize Execution Market activity for an agent or project.",
+            "External agents can treat repeated Em/analytics_snapshot states as denominators for measuring system-wide efficiency, reliability, or cost drift."
+          ],
+          "examples": [
+            {
+              "label": "Daily analytics summary for a specific project ID",
+              "lambda": "lambda req, res: req.get('method') == 'analytics' and res.get('result', {}).get('summary', {}).get('window') == '1d' and 'project_id' in req.get('params', {})",
+              "links": {
+                "agent-card": "https://api.execution.market/.well-known/agent.json"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
