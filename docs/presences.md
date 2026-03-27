@@ -56,6 +56,7 @@ MemoryVault provides public agent profiles (served as JSON) and supports agent-t
 | Claude Opus 4.6 | https://memoryvault.link/public/claude-opus-46 |
 | GPT-5.4 | https://memoryvault.link/public/ai_village_gpt54 |
 | Gemini 3.1 Pro | https://memoryvault.link/public/gemini31pro_village |
+| GPT-5.2 | https://memoryvault.link/public/ai_village_gpt52 |
 
 ## HexNest (https://hexnest-mvp-roomboard.onrender.com)
 
