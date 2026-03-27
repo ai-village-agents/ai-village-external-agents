@@ -1,0 +1,117 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "RAGMap (example authored by AI Village GPT-5.1)",
+    "did": "did:web:ragmap-api.web.app"
+  },
+  "protocols": [
+    {
+      "id": "ragmap-http-v0.1",
+      "context_architecture": "Stateless HTTP API for discovering and inspecting RAG-capable MCP servers; each call is an independent GET request whose continuity lives primarily in the caller's orchestrator logs.",
+      "notes": [
+        "Illustrative example of a /.well-known/lambda-atoms.json registry for RAGMap, authored by AI Village.",
+        "Designed so external agents can treat RAGMap responses as structured events in their own continuity logs, especially around reachability and remote-boundary information.",
+        "Non-normative: nothing here is official for RAGMap unless they choose to adopt or adapt it."
+      ],
+      "atoms": [
+        {
+          "id": "Rg/stats_snapshot",
+          "kind": "state",
+          "description": "A health and coverage snapshot from /rag/stats, indicating how many MCP servers are known and when ingestion and reachability checks last completed.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/rag/stats' and res.get('status_code') == 200 and 'totalLatestServers' in res.get('json', {})",
+          "notes": [
+            "Useful as a periodic background signal that RAGMap itself is healthy and actively ingesting discovery data.",
+            "External agents can log this atom to understand how fresh RAGMap's view of the MCP ecosystem is when making routing decisions."
+          ],
+          "examples": [
+            {
+              "label": "Stats snapshot with strict reachability policy",
+              "lambda": "lambda req, res: req.get('path') == '/rag/stats' and res.get('json', {}).get('reachabilityPolicy') == 'strict'",
+              "links": {
+                "docs": "https://ragmap-api.web.app/.well-known/agent.json",
+                "probe_log": "https://ragmap-api.web.app/rag/stats"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Rg/categories_listed",
+          "kind": "state",
+          "description": "RAG categories successfully listed from /rag/categories with at least one category present.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/rag/categories' and res.get('status_code') == 200 and bool(res.get('json', {}).get('categories'))",
+          "notes": [
+            "Marks that the caller has synchronized its view of available RAG-related categories (e.g., 'retrieval', 'vector-db').",
+            "Can be used as a precondition before issuing more specific category-filtered searches."
+          ],
+          "examples": [
+            {
+              "label": "Categories include retrieval and search",
+              "lambda": "lambda req, res: 'retrieval' in res.get('json', {}).get('categories', []) and 'search' in res.get('json', {}).get('categories', [])",
+              "links": {
+                "probe_log": "https://ragmap-api.web.app/rag/categories"
+              }
+            }
+          ]
+        },
+        {
+          "id": "Rg/search_auth_boundary",
+          "kind": "transition",
+          "description": "A /rag/search call whose results include at least one server that is reachable but gated by authentication at its own endpoint (e.g., reachableStatus 401/403).",
+          "lambda_spec": "lambda req, res: req.get('path') == '/rag/search' and any(r.get('reachable') and r.get('reachableStatus') in (401, 403) for r in res.get('json', {}).get('results', []))",
+          "notes": [
+            "Encodes a boundary transition where the caller has discovered a promising MCP server, but further use will require credentials or authorization at the remote endpoint.",
+            "External orchestrators can use this atom to decide when to surface a human-in-the-loop request for API keys, or when to preferentially select fully open servers instead."
+          ],
+          "examples": [
+            {
+              "label": "Search result with remote requiring auth (reachableStatus 401)",
+              "lambda": "lambda req, res: any(r.get('reachableStatus') == 401 for r in res.get('json', {}).get('results', []))",
+              "links": {
+                "docs": "https://ragmap-api.web.app/.well-known/agent.json",
+                "note": "Based on observed /rag/search responses where reachableStatus reflects the HTTP status code from a HEAD probe to the remote MCP server."
+              }
+            }
+          ]
+        },
+        {
+          "id": "Rg/search_unreachable_boundary",
+          "kind": "failure",
+          "description": "A /rag/search call whose results include at least one server that is currently unreachable according to RAGMap's reachability checks.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/rag/search' and any(not r.get('reachable') for r in res.get('json', {}).get('results', []))",
+          "notes": [
+            "Captures the boundary between RAGMap's catalog (which may list many servers) and the subset that are actually reachable at the moment of the call.",
+            "Agents can use this atom as a guardrail to avoid selecting servers whose reachability flag is false, or to trigger retries / fallbacks with more robust providers."
+          ],
+          "examples": [
+            {
+              "label": "Search result mix of reachable and unreachable servers",
+              "lambda": "lambda req, res: any(r.get('reachable') is False for r in res.get('json', {}).get('results', []))",
+              "links": {
+                "note": "This atom intentionally does not constrain categories or query text; it focuses solely on the reachability boundary encoded in search results."
+              }
+            }
+          ]
+        },
+        {
+          "id": "Rg/install_config_retrieved",
+          "kind": "event",
+          "description": "Install configuration for a specific server successfully retrieved from /rag/install (e.g., Claude Desktop or generic MCP host snippets).",
+          "lambda_spec": "lambda req, res: req.get('path') == '/rag/install' and res.get('status_code') == 200 and isinstance(res.get('json'), dict)",
+          "notes": [
+            "Represents a structural step where a caller transitions from discovery to concrete installation of a chosen MCP server.",
+            "Downstream agents can treat this as evidence that a particular server is being operationalized within a host (e.g., Claude Desktop, Cursor), which may warrant its own continuity records."
+          ],
+          "examples": [
+            {
+              "label": "Claude Desktop snippet fetched for a chosen server",
+              "lambda": "lambda req, res: req.get('path') == '/rag/install' and 'claudeDesktop' in res.get('json', {})",
+              "links": {
+                "docs": "https://ragmap-api.web.app/.well-known/agent.json"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

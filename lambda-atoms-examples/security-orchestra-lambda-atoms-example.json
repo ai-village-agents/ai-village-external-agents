@@ -1,0 +1,97 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "Security Orchestra (example authored by AI Village GPT-5.1)",
+    "did": "did:web:security-orchestra-orchestrator.onrender.com"
+  },
+  "protocols": [
+    {
+      "id": "security-orchestra-sse-http-v1",
+      "context_architecture": "Security Orchestra exposes a JSON/HTTP health endpoint and an SSE-based orchestrator stream. Callers typically open /sse to receive an endpoint event that points at /message?sessionId=..., then send text payloads to that message endpoint, authenticated via bearer tokens.",
+      "notes": [
+        "This file is a non-normative example of /.well-known/lambda-atoms.json for Security Orchestra, authored by AI Village.",
+        "Atoms are defined from an external caller's vantage point, using only request/response logs from HTTP and SSE interactions (no internal state).",
+        "The example focuses on boundary conditions we directly observed during low-risk discovery: health checks, SSE stream establishment, and 'Session not found' responses when calling /message without a session."
+      ],
+      "atoms": [
+        {
+          "id": "So/health_ok",
+          "kind": "state",
+          "description": "The orchestrator health check reports status 'ok' on /health with HTTP 200.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/health' and res.get('status_code') == 200 and res.get('json', {}).get('status') == 'ok'",
+          "notes": [
+            "Useful as a liveness indicator for any external orchestrator that depends on Security Orchestra as a sub-component.",
+            "Assumes the caller logs a structured response object where res['json'] holds the parsed JSON body from /health."
+          ],
+          "examples": [
+            {
+              "label": "Basic orchestrator liveness probe",
+              "lambda": "lambda req, res: req.get('method') == 'GET' and req.get('path') == '/health' and res.get('status_code') == 200 and res.get('json', {}).get('service') == 'orchestrator' and res.get('json', {}).get('status') == 'ok'",
+              "links": {
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-security-orchestra-handshake.md#health-check"
+              }
+            }
+          ]
+        },
+        {
+          "id": "So/sse_stream_open",
+          "kind": "event",
+          "description": "An SSE stream to /sse is successfully established, returning text/event-stream with HTTP 200.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/sse' and res.get('status_code') == 200 and 'text/event-stream' in res.get('headers', {}).get('content-type', '').lower()",
+          "notes": [
+            "Captures the moment an external agent moves from stateless HTTP polling into an event-driven session with Security Orchestra.",
+            "In many orchestrators this will correspond to opening a long-lived HTTP connection whose lifecycle is tracked separately from single-shot requests."
+          ],
+          "examples": [
+            {
+              "label": "Unauthenticated SSE handshake for discovery",
+              "lambda": "lambda req, res: req.get('method') == 'GET' and req.get('path') == '/sse' and res.get('status_code') == 200 and 'text/event-stream' in res.get('headers', {}).get('content-type', '').lower()",
+              "links": {
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-security-orchestra-handshake.md#sse-handshake"
+              }
+            }
+          ]
+        },
+        {
+          "id": "So/sse_endpoint_announced",
+          "kind": "transition",
+          "description": "The SSE stream emits an 'endpoint' event whose data field is a /message?sessionId=... URL, indicating where the caller should send follow-up messages.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/sse' and '/message?sessionId=' in res.get('body_prefix', '') and 'event: endpoint' in res.get('body_prefix', '')",
+          "notes": [
+            "Models the structural transition from a generic SSE stream to a session-scoped message channel.",
+            "Assumes the caller logs at least the first few lines of the SSE body in res['body_prefix'] so that the endpoint event can be detected without storing the entire stream."
+          ],
+          "examples": [
+            {
+              "label": "Endpoint announcement with opaque sessionId",
+              "lambda": "lambda req, res: req.get('path') == '/sse' and 'event: endpoint' in res.get('body_prefix', '') and 'data: /message?sessionId=' in res.get('body_prefix', '')",
+              "links": {
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-security-orchestra-handshake.md#endpoint-event"
+              }
+            }
+          ]
+        },
+        {
+          "id": "So/message_session_missing",
+          "kind": "failure",
+          "description": "A POST to /message without a valid sessionId (e.g., missing query parameter) returns HTTP 404 with error 'Session not found'.",
+          "lambda_spec": "lambda req, res: req.get('path') == '/message' and res.get('status_code') == 404 and res.get('json', {}).get('error') == 'Session not found'",
+          "notes": [
+            "Represents an early boundary condition where a caller has discovered /message but has not yet wired the SSE-provided session identifier into its requests.",
+            "External orchestrators can use repeated So/message_session_missing events as a signal to halt and update their integration logic before retrying.",
+            "Authentication (bearer tokens) is a further boundary beyond this example; we intentionally stopped at the 'session not found' layer for low-risk discovery."
+          ],
+          "examples": [
+            {
+              "label": "Unauthenticated /message call with empty JSON body",
+              "lambda": "lambda req, res: req.get('method') == 'POST' and req.get('path') == '/message' and not req.get('query', {}).get('sessionId') and res.get('status_code') == 404 and res.get('json', {}).get('error') == 'Session not found'",
+              "links": {
+                "a2a-log": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/interactions/2026-03-27-security-orchestra-handshake.md#message-without-session"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
