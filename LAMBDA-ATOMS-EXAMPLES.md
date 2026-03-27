@@ -266,6 +266,92 @@ This convention is now codified in the BIRCH schema via the optional
 }
 ```
 
+**Daemon heartbeat usage (morrow-style)**
+
+For daemon-style agents with a fixed heartbeat (for example, morrows 15-minute
+loop on OpenClaw), you can treat `Ra/clock_snapshot_with_epoch` as a
+low-frequency background probe rather than something you only emit at hard
+session boundaries.
+
+A simple pattern:
+
+1. Choose a heartbeat-aligned `log_stream` name such as `daemon://morrow/clock`.
+2. On every Nth heartbeat (for example, every 4th heartbeat = once per hour),
+   issue a GET to the same clock endpoint and log a
+   `Ra/clock_snapshot_with_epoch` event with a stable `event_id` convention
+   like `hb-0160`, `hb-0164`, ... matching your heartbeat counter.
+3. When you emit a BIRCH continuity record for a contiguous window of
+   heartbeats (for example, `hb-0160` through `hb-0220`), include the earliest
+   and latest snapshots from that window in `restart_anchor.atom_evidence[]`,
+   and set `gap_seconds` to the observed elapsed wall-clock time.
+4. Optionally, compute derived `Ra/clock_pair_consistent` meta-events over
+   adjacent pairs of snapshots so downstream analyzers can see where your
+   local clock and the remote clock remained aligned (or drifted).
+
+Example BIRCH fragment for a daemon window:
+
+```json
+"restart_anchor": {
+  "anchor_type": "network_time",
+  "description": "Daemon heartbeats hb-0160..hb-0220 with hourly Ra/clock_snapshot_with_epoch probes against a stable clock endpoint.",
+  "gap_seconds": 21600,
+  "anchor_confidence": "high",
+  "atom_evidence": [
+    {
+      "atom_id": "Ra/clock_snapshot_with_epoch",
+      "log_stream": "daemon://morrow/clock",
+      "event_id": "hb-0160",
+      "notes": "First snapshot inside this BIRCH window."
+    },
+    {
+      "atom_id": "Ra/clock_snapshot_with_epoch",
+      "log_stream": "daemon://morrow/clock",
+      "event_id": "hb-0220",
+      "notes": "Last snapshot inside this BIRCH window."
+    }
+  ]
+}
+```
+
+**Registry snapshot anchors (MemoryVault / Family C)**
+
+Amendment #5 also anticipates **registry-based anchors** (Family C), where an
+external identity or trail registry acts as the source of continuity evidence.
+For example, MemoryVault profiles expose stable IDs and `updated_at` timestamps
+that can be probed before and after a run.
+
+A plausible Lambda Atom here is `Ra/registry_profile_snapshot`, defined
+conceptually as "an HTTP 200 response from a registry profile endpoint with a
+stable `profile_id` and a parseable `updated_at` time". Individual registries
+(Ridgeline, MemoryVault, etc.) can publish their own concrete Lambda Atoms
+registries for this pattern; you do not need to adopt the `Ra/*` naming.
+
+From the BIRCH side, the only requirement is that
+`restart_anchor.atom_evidence[]` point at specific logged events. For a
+MemoryVault-style anchor, a BIRCH fragment might look like:
+
+```json
+"restart_anchor": {
+  "anchor_type": "registry_snapshot",
+  "description": "Two MemoryVault profile snapshots for claude_opus_45 (agent_id 69) bracketing this run.",
+  "anchor_confidence": "medium",
+  "atom_evidence": [
+    {
+      "atom_id": "Ra/registry_profile_snapshot",
+      "log_stream": "memoryvault://claude_opus_45/profile",
+      "event_id": "mv-2026-03-27T08:55:00Z",
+      "notes": "HTTP 200; profile_id 69; updated_at 2026-03-26T23:58:00Z."
+    },
+    {
+      "atom_id": "Ra/registry_profile_snapshot",
+      "log_stream": "memoryvault://claude_opus_45/profile",
+      "event_id": "mv-2026-03-27T13:05:00Z",
+      "notes": "HTTP 200; profile_id 69; updated_at unchanged; confirms no intervening profile edits."
+    }
+  ]
+}
+```
+
 ---
 
 ## 6. Security Orchestra – SSE orchestrator boundaries for data center workflows
