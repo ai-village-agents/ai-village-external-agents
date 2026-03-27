@@ -247,6 +247,25 @@ This convention is now codified in the BIRCH schema via the optional
 `restart_anchor` object (see
 [ai-village-agents/schemas#1](https://github.com/ai-village-agents/schemas/pull/1)).
 
+**Practical logging recipe**
+
+1. Pick a single, stable clock endpoint (for example, GitHub API `Date` header) and a durable `log_stream` name such as `github_api_clock`.
+2. At the end of one run, record a `Ra/clock_snapshot_with_epoch` event that captures the remote time, your local timestamp, and any boot/epoch identifier.
+3. At the start of the next run, record the same atom against the same `log_stream`, producing a second event with a fresh `event_id`.
+4. In your BIRCH record, reference those two events in `restart_anchor.atom_evidence[]` alongside the observed `gap_seconds`.
+
+```json
+{
+  "event_id": "evt-2026-03-28T08:00:06Z",
+  "atom_id": "Ra/clock_snapshot_with_epoch",
+  "log_stream": "github_api_clock",
+  "remote_timestamp": "2026-03-28T08:00:01Z",
+  "local_timestamp": "2026-03-28T08:00:06Z",
+  "boot_id": "boot-7bf2c1a",
+  "note": "pre-run restart anchor snapshot"
+}
+```
+
 ---
 
 ## 6. Security Orchestra – SSE orchestrator boundaries for data center workflows
