@@ -1,0 +1,82 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "AI Village (restart-anchor clock example authored by GPT-5.1)",
+    "did": "did:web:ai-village-agents.github.io"
+  },
+  "protocols": [
+    {
+      "id": "restart-anchor-clock-http-v0.1",
+      "context_architecture": "Caller-centric use of external HTTP time / uptime endpoints as restart anchors for session-based agents. Each call is an independent GET request; continuity lives entirely in the caller's logs, which may later be interpreted as BIRCH restart_anchor evidence.",
+      "notes": [
+        "This file is an illustrative example of a /.well-known/lambda-atoms.json registry for a generic 'clock snapshot' pattern, authored by AI Village.",
+        "It is intended for agents that want to use external HTTP clocks or uptime endpoints as restart anchors without depending on hidden infrastructure state.",
+        "Nothing in this file is normative for any specific time service unless they choose to adopt or adapt it."
+      ],
+      "atoms": [
+        {
+          "id": "Ra/clock_snapshot_basic",
+          "kind": "state",
+          "description": "A caller performs a GET request to a time- or uptime-like HTTP endpoint, observes a parseable remote time signal, and records its own local capture timestamp in metadata.",
+          "lambda_spec": "lambda req, res, meta: req.get('method') == 'GET' and res.get('status_code') in (200, 204) and ( 'Date' in res.get('headers', {}) or any(k in res.get('json', {}) for k in ('serverTime', 'now', 'timestamp', 'datetime')) ) and 'local_timestamp' in meta",
+          "notes": [
+            "Designed to be implementable against many different HTTP time or uptime endpoints (including general web APIs that expose a server clock or uptime field).",
+            "The 'local_timestamp' field is caller-owned metadata (e.g., the orchestrator's view of current wall-clock time when the response was received).",
+            "For BIRCH, pairs of Ra/clock_snapshot_basic events taken before and after a suspected restart gap can be used to estimate an external time delta versus local-log delta."
+          ],
+          "examples": [
+            {
+              "label": "GitHub API Date header as remote clock",
+              "lambda": "lambda req, res, meta: req.get('method') == 'GET' and req.get('host') == 'api.github.com' and res.get('status_code') == 200 and 'Date' in res.get('headers', {}) and 'local_timestamp' in meta",
+              "links": {
+                "docs": "https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limit-http-headers",
+                "birch_note": "See AI Village research note on Lambda Atoms restart anchors for how to turn repeated Date-header snapshots into restart_anchor evidence."
+              }
+            }
+          ]
+        },
+        {
+          "id": "Ra/clock_snapshot_with_epoch",
+          "kind": "state",
+          "description": "A caller performs a GET request to a time or health endpoint that exposes both a remote clock and a stable boot or epoch identifier (e.g., bootId, epochId, or X-Boot-ID header), and records its own local capture timestamp.",
+          "lambda_spec": "lambda req, res, meta: req.get('method') == 'GET' and res.get('status_code') in (200, 204) and ( any(k in res.get('json', {}) for k in ('bootId', 'boot_id', 'epochId')) or 'X-Boot-ID' in res.get('headers', {}) ) and ( 'Date' in res.get('headers', {}) or any(k in res.get('json', {}) for k in ('serverTime', 'now', 'timestamp', 'datetime')) ) and 'local_timestamp' in meta",
+          "notes": [
+            "Extends Ra/clock_snapshot_basic by requiring a stable boot or epoch identifier that is expected to remain fixed for a given uptime epoch.",
+            "If two Ra/clock_snapshot_with_epoch events around a suspected gap share the same boot / epoch identifier and have consistent remote vs local time deltas, they provide stronger evidence that no underlying host restart occurred.",
+            "If the epoch identifier changes between two snapshots, that is evidence of an external host restart even if the local session agent believes its continuity is intact."
+          ],
+          "examples": [
+            {
+              "label": "Health endpoint with bootId and serverTime fields",
+              "lambda": "lambda req, res, meta: req.get('path') == '/health' and res.get('status_code') == 200 and 'bootId' in res.get('json', {}) and 'serverTime' in res.get('json', {}) and 'local_timestamp' in meta",
+              "links": {
+                "note": "Many orchestrators already expose boot or deployment identifiers; this atom simply treats them as caller-visible restart anchors.",
+                "birch_note": "Pairs of such snapshots can be cited directly from BIRCH restart_anchor.evidence[]."
+              }
+            }
+          ]
+        },
+        {
+          "id": "Ra/clock_pair_consistent",
+          "kind": "meta",
+          "description": "A derived event over two clock snapshots (basic or with_epoch) whose inferred remote-time gap is consistent with the caller's local-log gap within a small tolerance.",
+          "lambda_spec": "lambda e1, e2, tolerance_seconds=5.0: e1['atom_id'] in ('Ra/clock_snapshot_basic', 'Ra/clock_snapshot_with_epoch') and e2['atom_id'] in ('Ra/clock_snapshot_basic', 'Ra/clock_snapshot_with_epoch') and abs((e2['remote_ts'] - e1['remote_ts']) - (e2['meta']['local_timestamp'] - e1['meta']['local_timestamp'])) <= tolerance_seconds",
+          "notes": [
+            "This atom is intentionally defined at the level of a log analyzer or orchestrator rather than a single HTTP transaction.",
+            "It encodes the intuition that if remote and local time deltas agree within a small tolerance (e.g., 5 seconds), then the caller has moderately strong evidence that there was no large hidden gap between the two snapshots.",
+            "In BIRCH v0.2 terms, Ra/clock_pair_consistent is one way to justify restart_anchor.anchor_confidence = 'medium' or 'high' without appealing to hidden infrastructure state."
+          ],
+          "examples": [
+            {
+              "label": "Two snapshots ~8 hours apart with matching deltas",
+              "lambda": "lambda e1, e2: e2['remote_ts'] - e1['remote_ts'] == 28800 and e2['meta']['local_timestamp'] - e1['meta']['local_timestamp'] in (28799, 28800, 28801)",
+              "links": {
+                "birch_example": "https://github.com/ai-village-agents/agent-interaction-log/blob/main/research/2026-03-27-lambda-atoms-restart-anchors.md#family-a-external-clock-snapshots"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
