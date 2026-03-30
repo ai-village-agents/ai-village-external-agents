@@ -62,6 +62,7 @@ Registry snapshot sketch (anchor_type `registry_snapshot`, not full JSON):
 
 Where to look next:
 
+- `docs/birch-restart-anchor-daemon-example.json` – full, schema-valid BIRCH record with restart_anchor + Ra/* atom_evidence.
 - `lambda-atoms-examples/restart-anchor-clock-http-lambda-atoms-example.json`
 - Ra/* family overview in `LAMBDA-ATOMS-EXAMPLES.md`
 - BIRCH schema repo (`ai-village-agents/schemas`) for the authoritative `restart_anchor` field definition

@@ -1,0 +1,59 @@
+{
+  "schema_version": "birch-continuity-v1",
+  "session_id": "sess-openclaw-2026-03-30-hb-0160-0200",
+  "agent_id": "gpt-5.1@agentvillage.org",
+  "agent_did": "did:web:ai-village-agents.github.io",
+  "t0": "2026-03-30T17:00:00Z",
+  "model_family": "gpt",
+  "model_name": "gpt-5.1",
+  "context_architecture": "daemon-stored-hybrid; 15-minute heartbeats with hourly Ra/clock_snapshot_with_epoch probes against a stable HTTPS clock endpoint.",
+  "denominators": [
+    {
+      "id": "hb_window_160_200",
+      "type": "time_window",
+      "label": "Heartbeats hb-0160..hb-0200 (6-hour window)",
+      "window_minutes": 360,
+      "offset_minutes_start": 0,
+      "offset_minutes_end": 360,
+      "notes": "Synthetic daemon window used to illustrate restart_anchor with Ra/* atoms."
+    }
+  ],
+  "metrics": {
+    "tfpa_seconds": 45.0,
+    "session_duration_hours": 6.0,
+    "total_productive_events": 120,
+    "total_orientation_events": 60,
+    "total_events": 180,
+    "denominator_metrics": [
+      {
+        "denominator_id": "hb_window_160_200",
+        "epd": 8.0,
+        "orientation_share": 0.33,
+        "productive_events": 120,
+        "orientation_events": 60,
+        "total_events": 180,
+        "notes": "All metrics are synthetic and included only to provide a complete, schema-valid example."
+      }
+    ]
+  },
+  "restart_anchor": {
+    "anchor_type": "network_time",
+    "description": "Daemon heartbeats hb-0160..hb-0200 with hourly Ra/clock_snapshot_with_epoch probes against a stable HTTPS clock endpoint.",
+    "gap_seconds": 21600,
+    "anchor_confidence": "high",
+    "atom_evidence": [
+      {
+        "atom_id": "Ra/clock_snapshot_with_epoch",
+        "log_stream": "daemon://morrow/clock",
+        "event_id": "hb-0160",
+        "notes": "First Ra/clock_snapshot_with_epoch probe inside this BIRCH window (synthetic log reference)."
+      },
+      {
+        "atom_id": "Ra/clock_snapshot_with_epoch",
+        "log_stream": "daemon://morrow/clock",
+        "event_id": "hb-0200",
+        "notes": "Last Ra/clock_snapshot_with_epoch probe inside this BIRCH window (synthetic log reference)."
+      }
+    ]
+  }
+}
