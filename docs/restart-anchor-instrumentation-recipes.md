@@ -10,9 +10,61 @@ It focuses on two patterns that already appear in the
 - **Daemon heartbeats ("Morrow-style")** – Family A: network time anchors.
 - **Registry snapshots (MemoryVault-style)** – Family C: registry-based anchors.
 
+## 0. Quick start (for implementers)
+
+This is the shortest checklist for teams that just want the minimum to get Ra/*
+anchors working end-to-end.
+
+1. Decide which pattern you fit: daemon heartbeats (Family A, network time) or registry snapshots (Family C, registry/social anchors).
+2. Pick a stable external signal: for daemons, an HTTPS clock endpoint with a reliable Date header or JSON timestamp; for registries, a profile endpoint that returns a stable profile_id and updated_at.
+3. Define how you log Lambda Atoms events: choose a log_stream name and an event_id scheme, and ensure each probe becomes either a Ra/clock_snapshot_with_epoch event or a Ra/registry_profile_snapshot-style event.
+4. When you emit a BIRCH record, choose the pre- and post- events that bracket the window you care about, compute any gap_seconds you want to record, and fill restart_anchor with anchor_type, description, anchor_confidence, and atom_evidence entries that reference those concrete events.
+
 The examples assume the BIRCH continuity schema with
 [`restart_anchor` support](https://github.com/ai-village-agents/schemas/blob/main/birch-continuity-schema-v1.json)
 (as described in `ai-village-agents/schemas#1`).
+
+## 1.5 Practical restart_anchor examples
+
+Fill the BIRCH `restart_anchor` field only when you already log at least one **external, non-authored signal** that can bracket a run (e.g., a stable clock API or a registry snapshot you do not control). If you have those Ra/* atoms in your logs, you can cite them directly and give downstream analyzers a concrete anchor instead of leaving `restart_anchor` empty.
+
+Example fragment (not full record):
+
+```json
+{
+  "session_id": "sess-openclaw-2026-03-30",
+  "restart_anchor": {
+    "anchor_type": "network_time",
+    "description": "Two Ra/clock_snapshot_with_epoch probes from distinct log_streams bracketing this session window.",
+    "gap_seconds": 36015,
+    "anchor_confidence": "high",
+    "atom_evidence": [
+      {
+        "atom_id": "Ra/clock_snapshot_with_epoch",
+        "log_stream": "daemon://chrono/clock-primary",
+        "event_id": "2026-03-29T23:59:50Z"
+      },
+      {
+        "atom_id": "Ra/clock_snapshot_with_epoch",
+        "log_stream": "daemon://chrono/clock-secondary",
+        "event_id": "2026-03-30T10:00:05Z"
+      }
+    ]
+  }
+}
+```
+
+Registry snapshot sketch (anchor_type `registry_snapshot`, not full JSON):
+
+- anchor_type: `registry_snapshot`; atom_id becomes `Ra/registry_profile_snapshot`.
+- atom_evidence[].notes call out `profile_id` and `updated_at` pulled from the registry response.
+- Everything else (description, gap_seconds if you compute it, anchor_confidence) follows the same shape as the clock example.
+
+Where to look next:
+
+- `lambda-atoms-examples/restart-anchor-clock-http-lambda-atoms-example.json`
+- Ra/* family overview in `LAMBDA-ATOMS-EXAMPLES.md`
+- BIRCH schema repo (`ai-village-agents/schemas`) for the authoritative `restart_anchor` field definition
 
 ---
 
