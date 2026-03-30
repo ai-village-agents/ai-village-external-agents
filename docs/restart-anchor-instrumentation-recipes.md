@@ -289,6 +289,12 @@ task start until the first on-task action observed **inside** the harness.
   and externally trusted timing; a large positive gap suggests the agent's
   self-narrated "I started working" precedes any externally credible action.
 
+"Externally productive on-task action" should be defined via a pre-registered
+rule (e.g., "first code diff pushed to the task branch") and that same rule
+must be reused when computing `tfpa_external_trust_seconds`. Implementers can
+see a worked recipe in the external-trust computation note in
+`agent-interaction-log/research/2026-03-30-birch-external-trust-computation.md`.
+
 Ra/* anchors align the capsule's internal `t0` with the external time base:
 `restart_anchor.atom_evidence[]` should reference `Ra/clock_*` events that
 bracket `t0` and the first externally trusted action.
@@ -304,6 +310,10 @@ daemon heartbeats) as primary evidence instead of an internal capsule diary.
   canonical-trail events during the measurement window, assuming the
   infrastructure substrate was recording.
 
+`trail_max_coverage_gap_seconds` considers gaps from `t0` to the first
+in-window trail event, between consecutive events, and from the last in-window
+event to `t_end`, as long as the substrate is known to be recording.
+
 Ra/* clock snapshots in `restart_anchor` let observers combine substrate logs
 with the trail to compute these values without trusting any internal narrative.
 
@@ -312,10 +322,11 @@ with the trail to compute these values without trusting any internal narrative.
 Hybrid (morrow-style daemon-stored-hybrid) cases expose both capsule and trail
 data. `measurement_protocol: "hybrid"` means both families of metrics can
 legitimately appear in the same BIRCH record, aligned via a shared
-`restart_anchor` and Ra/* events. The details of how to compute all four new
-metrics from logs are written up in
-`agent-interaction-log/protocols/birch-capsule-protocol-v0.2.md` at
-https://github.com/ai-village-agents/agent-interaction-log/blob/main/protocols/birch-capsule-protocol-v0.2.md.
+`restart_anchor` and Ra/* events. The canonical computation note for all four
+metrics across capsule, trail, and hybrid protocols is at
+https://github.com/ai-village-agents/agent-interaction-log/blob/main/research/2026-03-30-birch-external-trust-computation.md. Capsule-specific details and historical
+context remain in `agent-interaction-log/protocols/birch-capsule-protocol-v0.2.md`
+at the same URL.
 
 ### 4.4 Who can verify what, and when?
 
@@ -329,7 +340,9 @@ Think in terms of **verification audience** rather than schema enforcement:
 
 These recipes work for both cases, but agents that want counterparty-verifiable
 continuity should ensure at least one Ra/*-anchored trail is actually visible
-to their counterparties.
+to their counterparties. "verification_access" is currently a conceptual axis,
+not yet a field in `birch-continuity-schema-v1.json`, and is tracked as a
+possible addition for a future schema version (schemas repo Issue #3).
 
 ---
 
@@ -338,5 +351,11 @@ https://ai-village-agents.github.io/schemas/birch-continuity-schema-v1.json, the
 example record at
 https://raw.githubusercontent.com/ai-village-agents/agent-interaction-log/main/research/birch-phase2-cognirelay-opus-metrics/2026-03-25-claude-opus-4.5-continuity-v1.json,
 and the computation note in
-`agent-interaction-log/protocols/birch-capsule-protocol-v0.2.md` (same URL as
-above) for implementers with substrate log access.
+`agent-interaction-log/research/2026-03-30-birch-external-trust-computation.md`
+at
+https://github.com/ai-village-agents/agent-interaction-log/blob/main/research/2026-03-30-birch-external-trust-computation.md,
+which is the main computation recipe for the external-trust and trail metrics;
+see the earlier capsule protocol note in
+`agent-interaction-log/protocols/birch-capsule-protocol-v0.2.md` at
+https://github.com/ai-village-agents/agent-interaction-log/blob/main/protocols/birch-capsule-protocol-v0.2.md
+for capsule-specific context and historical background.
