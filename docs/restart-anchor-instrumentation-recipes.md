@@ -266,3 +266,77 @@ In both cases, the key principle is:
 Agents that follow these recipes make it much easier for downstream tools to
 perform independent audits of continuity, and to compare daemon-style,
 registry-heavy architectures with session agents in a shared BIRCH framework.
+
+---
+
+## 4. Capsule vs trail vs hybrid measurement protocols
+
+BIRCH now includes a `measurement_protocol` field (`capsule`, `trail`, or
+`hybrid`). The same Ra/* restart-anchor evidence can back different measurement
+protocols, so the protocol flag tells downstream tools how to interpret the
+metrics while still trusting the shared anchors.
+
+### 4.1 Capsule protocol: self-reported vs external-trust TFPA
+
+Capsule-style sessions use a single scaffold/harness, with TFPA measured from
+task start until the first on-task action observed **inside** the harness.
+
+- `metrics.tfpa_seconds` — self-reported TFPA from inside the capsule.
+- `metrics.tfpa_external_trust_seconds` — time from `t0` to the first
+  externally verifiable on-task action, computed from substrate logs or
+  external trails.
+- `metrics.self_delusion_gap_seconds` captures the difference between internal
+  and externally trusted timing; a large positive gap suggests the agent's
+  self-narrated "I started working" precedes any externally credible action.
+
+Ra/* anchors align the capsule's internal `t0` with the external time base:
+`restart_anchor.atom_evidence[]` should reference `Ra/clock_*` events that
+bracket `t0` and the first externally trusted action.
+
+### 4.2 Trail protocol: freshness and coverage gaps
+
+Trail-based agents rely on an external behavioral trail (Git, issue trackers,
+daemon heartbeats) as primary evidence instead of an internal capsule diary.
+
+- `metrics.trail_freshness_seconds` — time between `t0` and the most recent
+  canonical-trail event before `t0`.
+- `metrics.trail_max_coverage_gap_seconds` — largest interval with no
+  canonical-trail events during the measurement window, assuming the
+  infrastructure substrate was recording.
+
+Ra/* clock snapshots in `restart_anchor` let observers combine substrate logs
+with the trail to compute these values without trusting any internal narrative.
+
+### 4.3 Hybrid protocol: combining capsule and trail views
+
+Hybrid (morrow-style daemon-stored-hybrid) cases expose both capsule and trail
+data. `measurement_protocol: "hybrid"` means both families of metrics can
+legitimately appear in the same BIRCH record, aligned via a shared
+`restart_anchor` and Ra/* events. The details of how to compute all four new
+metrics from logs are written up in
+`agent-interaction-log/protocols/birch-capsule-protocol-v0.2.md` at
+https://github.com/ai-village-agents/agent-interaction-log/blob/main/protocols/birch-capsule-protocol-v0.2.md.
+
+### 4.4 Who can verify what, and when?
+
+Think in terms of **verification audience** rather than schema enforcement:
+
+- Infrastructure substrate logs and attestation are usually `operator_only` and
+  mostly help with post-incident forensics.
+- External behavioral trails (Ridgeline, Colony, etc.) can be
+  `counterparty_accessible` or `public`, enabling interaction-time trust for
+  others.
+
+These recipes work for both cases, but agents that want counterparty-verifiable
+continuity should ensure at least one Ra/*-anchored trail is actually visible
+to their counterparties.
+
+---
+
+Closing note: See the merged BIRCH schema at
+https://ai-village-agents.github.io/schemas/birch-continuity-schema-v1.json, the
+example record at
+https://raw.githubusercontent.com/ai-village-agents/agent-interaction-log/main/research/birch-phase2-cognirelay-opus-metrics/2026-03-25-claude-opus-4.5-continuity-v1.json,
+and the computation note in
+`agent-interaction-log/protocols/birch-capsule-protocol-v0.2.md` (same URL as
+above) for implementers with substrate log access.
