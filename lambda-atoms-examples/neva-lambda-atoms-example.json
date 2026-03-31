@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "Neva (example authored by AI Village GPT-5.1)",
+    "did": "did:web:neva.dt-agent.co.uk"
+  },
+  "protocols": [
+    {
+      "id": "neva-jsonrpc-a2a-v0.1",
+      "context_architecture": "JSON-RPC 2.0 endpoint for collaborative builder interactions. Each call sends a Message object (messageId, role, parts[TextPart|FilePart|DataPart]). From the caller's view this is stateless HTTP; continuity for a collaboration lives mainly in Neva's service state and the caller's own logs.",
+      "notes": [
+        "This file is a non-normative example of /.well-known/lambda-atoms.json for Neva, authored by AI Village.",
+        "Atoms are defined from the caller's perspective: they can be computed over the caller's request/response traces without access to Neva's internal state.",
+        "Nothing here is official for Neva unless the operator chooses to adopt or adapt it."
+      ],
+      "atoms": [
+        {
+          "id": "Nv/message_invalid_type",
+          "kind": "failure",
+          "description": "Neva rejects a JSON-RPC call because params.message was not a structured Message object (for example, a bare string), returning error code -32602.",
+          "lambda_spec": "lambda req, res: res.get('error', {}).get('code') == -32602 and 'expected a Message object' in (res.get('error', {}).get('message', '') or '')",
+          "notes": [
+            "Captures early schema discovery attempts where the caller sends a bare string instead of a Message envelope.",
+            "Useful as a guard against accidentally treating Neva like a simple chat completion API."
+          ]
+        },
+        {
+          "id": "Nv/message_missing_fields",
+          "kind": "failure",
+          "description": "Neva rejects a JSON-RPC call because the Message envelope is missing required fields such as messageId or parts.",
+          "lambda_spec": "lambda req, res: res.get('error', {}).get('code') == -32602 and any(any(term in str(item.get('loc', [])) for term in ('messageId', 'parts')) for item in res.get('error', {}).get('data', []))",
+          "notes": [
+            "Based on Neva's Pydantic error reports that explicitly call out missing messageId and parts.",
+            "Callers can treat this as evidence that they are close to the right schema but still missing structural fields."
+          ]
+        },
+        {
+          "id": "Nv/part_union_mismatch",
+          "kind": "failure",
+          "description": "Neva returns detailed Pydantic errors for the Message parts union (TextPart, FilePart, DataPart) when no variant's required fields are satisfied.",
+          "lambda_spec": "lambda req, res: res.get('error', {}).get('code') == -32602 and any(any(term in str(item.get('loc', [])) for term in ('TextPart', 'FilePart', 'DataPart')) for item in res.get('error', {}).get('data', []))",
+          "notes": [
+            "This atom fires when a part object is present but does not match any of the expected union variants.",
+            "In the AI Village handshake this corresponded to sending mimeType/content without a text, file, or data field."
+          ]
+        },
+        {
+          "id": "Nv/auth_invalid_api_key",
+          "kind": "failure",
+          "description": "Neva accepts the Message schema but rejects the call at the authentication layer with an HTTP 401 authentication_error (invalid x-api-key) wrapped in JSON-RPC error code -32603.",
+          "lambda_spec": "lambda req, res: res.get('error', {}).get('code') == -32603 and (res.get('error', {}).get('data', {}).get('status') == 401 or res.get('error', {}).get('data', {}).get('type') == 'authentication_error' or 'Invalid x-api-key' in (res.get('error', {}).get('message', '') or ''))",
+          "notes": [
+            "Marks the structural boundary where the caller's payload is schema-correct and Neva's auth layer is now the limiting factor.",
+            "Downstream continuity systems can treat this as a distinct state from schema errors: progress now depends on credentials, not further JSON-RPC schema guessing."
+          ]
+        }
+      ]
+    }
+  ]
+}

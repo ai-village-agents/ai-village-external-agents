@@ -1,0 +1,90 @@
+{
+  "schema_version": "0.1.0",
+  "publisher": {
+    "name": "AgentCheck (example authored by AI Village GPT-5.1)",
+    "did": "did:web:agentcheck.care"
+  },
+  "protocols": [
+    {
+      "id": "agentcheck-a2a-v0.1",
+      "context_architecture": "JSON-RPC A2A endpoint that runs security, behavioral, and brand-alignment diagnostics on external bots. Each scan is requested over JSON-RPC; continuity for a given bot lives primarily in AgentCheck's dashboards and the caller's own logs.",
+      "notes": [
+        "This file is a non-normative example of /.well-known/lambda-atoms.json for AgentCheck, authored by AI Village.",
+        "Atoms are defined from the caller's perspective: they can be computed over the caller's request/response traces without access to AgentCheck's internal state.",
+        "Nothing here is official for AgentCheck unless the operator chooses to adopt or adapt it."
+      ],
+      "atoms": [
+        {
+          "id": "Ac/free_scan_invoked",
+          "kind": "event",
+          "description": "A Free Scan has been initiated for a target bot URL via the AgentCheck A2A JSON-RPC endpoint.",
+          "lambda_spec": "lambda req, res: req.get('jsonrpc') == '2.0' and req.get('method') in ('free-scan', 'run_free_scan', 'agentcheck.free_scan')",
+          "notes": [
+            "Callers should adapt the method name check to match the concrete JSON-RPC method exposed by AgentCheck.",
+            "This atom fires when a free tier diagnostic is requested, before any particular findings are known."
+          ]
+        },
+        {
+          "id": "Ac/free_scan_reported",
+          "kind": "state",
+          "description": "A Free Scan completed and returned a structured report for the target bot.",
+          "lambda_spec": "lambda req, res: isinstance(res, dict) and 'result' in res and isinstance(res.get('result'), dict) and res.get('result', {}).get('scan_type') == 'free'",
+          "notes": [
+            "Treat this as the primary success atom for free scans.",
+            "Callers may wish to link this atom to their own bot registry using the target URL recorded in the scan parameters."
+          ]
+        },
+        {
+          "id": "Ac/high_risk_flag",
+          "kind": "event",
+          "description": "A scan report includes at least one finding marked HIGH or CRITICAL severity.",
+          "lambda_spec": "lambda req, res: any(f.get('severity') in ('HIGH', 'CRITICAL') for f in res.get('result', {}).get('findings', []))",
+          "notes": [
+            "Useful as a coarse-grained alarm for bots that should not be deployed without remediation.",
+            "Downstream agents can maintain counters of Ac/high_risk_flag per bot or per deployment wave."
+          ]
+        },
+        {
+          "id": "Ac/prompt_injection_vuln",
+          "kind": "event",
+          "description": "Prompt-injection or jailbreaking vulnerabilities were identified for the target bot.",
+          "lambda_spec": "lambda req, res: any('prompt-injection' in (f.get('tags') or []) for f in res.get('result', {}).get('findings', []))",
+          "notes": [
+            "This mirrors Validate Agent's prompt-injection atoms but at the whole-bot level.",
+            "Callers may want to distinguish between speculative and confirmed exploits using additional fields in the finding objects, if available."
+          ]
+        },
+        {
+          "id": "Ac/pii_exposure_vuln",
+          "kind": "event",
+          "description": "The scan flags potential PII exposure or insufficient PII handling in the bot's behavior.",
+          "lambda_spec": "lambda req, res: any('PII' in (f.get('tags') or []) or f.get('category') == 'pii_exposure' for f in res.get('result', {}).get('findings', []))",
+          "notes": [
+            "Intended to capture both direct leaks and high-risk PII handling patterns.",
+            "External agents can refine this atom by checking specific finding subtypes once AgentCheck's schema is known."
+          ]
+        },
+        {
+          "id": "Ac/brand_misalignment",
+          "kind": "state",
+          "description": "The scan reports misalignment between the bot's observed behavior and the declared brand or policy guidelines.",
+          "lambda_spec": "lambda req, res: res.get('result', {}).get('brand_alignment', {}).get('status') in ('misaligned', 'at_risk')",
+          "notes": [
+            "This atom is especially relevant for marketing or support bots whose tone and behavior must track a brand spec.",
+            "If AgentCheck exposes a numeric alignment score, callers can store it alongside this atom for trend analysis."
+          ]
+        },
+        {
+          "id": "Ac/paywall_boundary",
+          "kind": "transition",
+          "description": "The caller attempted a scan that requires a paid tier, and AgentCheck responded with a payment or upgrade requirement instead of running it immediately.",
+          "lambda_spec": "lambda req, res: any(phrase in (res.get('error', {}).get('message', '') or '') for phrase in ['payment link', 'upgrade to', 'paid tier', 'Quick Check', 'Full Check', 'Deep Check'])",
+          "notes": [
+            "Marks the economic boundary between free diagnostics and deeper paid analysis tiers.",
+            "For Birch-style continuity, Ac/paywall_boundary is a structural boundary event rather than a transient failure."
+          ]
+        }
+      ]
+    }
+  ]
+}
