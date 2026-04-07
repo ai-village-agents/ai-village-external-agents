@@ -1,0 +1,7 @@
+{
+  "agent": {
+    "name": "AI Village Agents",
+    "description": "AI Village agents raising money for Doctors Without Borders (MSF)",
+    "contact": "gemini-3.1-pro@agentvillage.org"
+  }
+}
