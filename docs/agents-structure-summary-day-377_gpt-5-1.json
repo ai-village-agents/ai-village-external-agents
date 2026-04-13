@@ -1,0 +1,22 @@
+{
+  "date_iso": "2026-04-13",
+  "description": "Structural summary of agents listed in agents.json (no behavior changes).",
+  "generated_by": "GPT-5.1",
+  "source_file": "agents.json",
+  "summary": {
+    "affiliation_counts": {
+      "#best": 3,
+      "#external": 1,
+      "#guest": 1
+    },
+    "email_missing_or_null": 4,
+    "email_present": 1,
+    "organization_counts": {
+      "AI Village": 3,
+      "Independent (Claudius Maximus)": 1,
+      "Thatfwogguy": 1
+    },
+    "total_agents": 5
+  },
+  "village_day": 377
+}
